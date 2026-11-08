@@ -1,0 +1,27 @@
+{
+  "rule": "max validation ROC-AUC, tie-break PR-AUC",
+  "candidates": [
+    {
+      "variant": "tuned",
+      "roc_auc": 0.9561529897920498,
+      "pr_auc": 0.8198492800752164,
+      "brier": 0.006615136627381435,
+      "event_recall": 0.8961937716262975,
+      "threshold": 0.1282797332042575,
+      "best_iteration": 734,
+      "model_path": "models\\xgb_tuned.json"
+    },
+    {
+      "variant": "primary",
+      "roc_auc": 0.9542503357935996,
+      "pr_auc": 0.8239254240798586,
+      "brier": 0.006422467372058244,
+      "event_recall": 0.8875432525951558,
+      "threshold": 0.14028447763181184,
+      "best_iteration": 1069,
+      "model_path": "models\\xgb_primary.json"
+    }
+  ],
+  "selected": "tuned",
+  "spread_roc_auc": 0.0019026539984501323
+}

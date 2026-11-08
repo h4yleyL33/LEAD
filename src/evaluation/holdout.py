@@ -31,7 +31,6 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import xgboost as xgb  # noqa: E402
-from sklearn.calibration import calibration_curve  # noqa: E402
 from sklearn.metrics import precision_recall_curve, roc_curve  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -40,7 +39,8 @@ from src.data.load import (  # noqa: E402
     feature_columns, load_features, load_splits, observed_only, split_frame,
 )
 from src.evaluation.metrics import (  # noqa: E402
-    bootstrap_auc_ci, event_metrics, point_metrics,
+    bootstrap_auc_ci, event_metrics, expected_calibration_error, point_metrics,
+    reliability_curve,
 )
 from src.utils.config import (  # noqa: E402
     FIGURES_DIR, GROUP_COL, METRICS_DIR, MODELS_DIR, PREDICTIONS_DIR, TABLES_DIR, TARGET_COL,
@@ -54,7 +54,8 @@ plt.rcParams.update({
 })
 
 
-def expected_calibration_error(y: np.ndarray, p: np.ndarray, bins: int = 15) -> float:
+def expected_calibration_error_legacy(y: np.ndarray, p: np.ndarray, bins: int = 15) -> float:
+    """Equal-width ECE, kept only for continuity with the first holdout run."""
     edges = np.linspace(0.0, 1.0, bins + 1)
     idx = np.clip(np.digitize(p, edges) - 1, 0, bins - 1)
     ece = 0.0
@@ -102,7 +103,8 @@ def main() -> int:
         "model": f"xgboost_{args.variant}",
         "split_evaluated": "test",
         "threshold_source": f"val ({val_metrics_path.name})",
-        "ece_15bin": expected_calibration_error(y, p),
+        "ece_quantile_12bin": expected_calibration_error(y, p, bins=12, strategy="quantile"),
+        "ece_uniform_15bin": expected_calibration_error_legacy(y, p),
         "n_buildings": int(len(np.unique(groups))),
         "val_reference": {
             "roc_auc": val_metrics["roc_auc"],
@@ -114,7 +116,8 @@ def main() -> int:
     print(f"test buildings: {m['n_buildings']}  rows: {m['n']:,}  anomalies: {m['n_pos']:,}")
     print(f"ROC-AUC {m['roc_auc']:.4f}  (95% CI {m['auc_ci95_low']:.4f}-{m['auc_ci95_high']:.4f})")
     print(f"PR-AUC  {m['pr_auc']:.4f}   base rate {m['base_rate']:.4f}")
-    print(f"Brier {m['brier']:.5f}   ECE {m['ece_15bin']:.5f}")
+    print(f"Brier {m['brier']:.5f}   ECE(quantile) {m['ece_quantile_12bin']:.5f}   "
+          f"ECE(uniform) {m['ece_uniform_15bin']:.5f}")
     print(f"recall@FPR1% {m['recall_at_fpr_1pct']:.4f}   @FPR0.1% {m['recall_at_fpr_0p1pct']:.4f}")
     print(f"@thr {threshold:.4f}: precision {m['precision']:.4f}  recall {m['recall']:.4f}  "
           f"F1 {m['f1']:.4f}  alert rate {m['alert_rate']:.4f}")
@@ -172,15 +175,29 @@ def main() -> int:
     fig.savefig(FIGURES_DIR / f"holdout_pr_{args.variant}.png")
     plt.close(fig)
 
-    frac_pos, mean_pred = calibration_curve(y, p, n_bins=15, strategy="quantile")
-    fig, ax = plt.subplots(figsize=(3.6, 3.2))
-    ax.plot([0, 1], [0, 1], color="k", lw=0.6, ls="--")
-    ax.plot(mean_pred, frac_pos, "o-", color="#55A868", lw=1.4, ms=3,
-            label=f"ECE {m['ece_15bin']:.4f}")
-    ax.set_xlabel("Mean predicted probability")
+    curve = reliability_curve(y, p, bins=12, strategy="quantile")
+    fig, axes = plt.subplots(2, 1, figsize=(4.2, 4.4), sharex=True,
+                             gridspec_kw={"height_ratios": [3, 1]})
+    ax = axes[0]
+    lims = [max(min(curve["mean_predicted"] + curve["observed"]) * 0.5, 1e-5),
+            max(max(curve["mean_predicted"] + curve["observed"]) * 1.5, 1e-2)]
+    ax.plot(lims, lims, color="k", lw=0.7, ls="--", label="perfect calibration")
+    ax.plot(curve["mean_predicted"], curve["observed"], "o-", color="#55A868", lw=1.4, ms=3,
+            label=f"ECE {m['ece_quantile_12bin']:.4f} (quantile bins)")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(*lims)
+    ax.set_ylim(*lims)
     ax.set_ylabel("Observed anomaly rate")
     ax.set_title("Calibration — held-out buildings")
-    ax.legend(frameon=False, fontsize=7)
+    ax.legend(frameon=False, fontsize=6.5, loc="upper left")
+
+    axes[1].bar(curve["mean_predicted"], curve["count"], width=np.diff(
+        [0] + curve["mean_predicted"]) if len(curve["mean_predicted"]) > 1 else 0.01,
+        color="#4C72B0", alpha=0.75)
+    axes[1].set_xscale("log")
+    axes[1].set_xlabel("Mean predicted probability (log scale)")
+    axes[1].set_ylabel("Rows per bin")
     fig.savefig(FIGURES_DIR / f"holdout_calibration_{args.variant}.png")
     plt.close(fig)
 

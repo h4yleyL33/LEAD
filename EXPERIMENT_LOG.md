@@ -34,7 +34,55 @@ Metrics are copied from files under `results/metrics/` — never typed from memo
 
 ---
 
-<!-- New entries below. Template:
+## E-002 — Reference baselines on the validation buildings
+
+- **Date:** 2026-11-09
+- **Command:** `python -m src.models.baselines`
+- **Purpose:** Establish floor (prior), linear reference (logistic) and unsupervised reference (Isolation Forest).
+- **Split / seed:** val (30 buildings, 250,019 observed rows); seed 42.
+- **Config:** median imputation + missing indicators + standardisation for logistic (lbfgs, 300 iters); IForest 200 trees, max_samples 4096, contamination auto.
+- **Metrics:** prior ROC-AUC 0.5000 / Brier 0.02104; logistic 0.8087 / PR-AUC 0.5715 / event recall 0.7803; iforest 0.8058 / PR-AUC 0.2296 / recall@FPR1% 0.3006.
+- **Artifacts:** `results/metrics/baselines_val.json`
+- **Type:** reporting
+
+## E-003 — Hyper-parameter search (TPE abandoned, deterministic grid used)
+
+- **Date:** 2026-11-09
+- **Command:** `python -m src.models.tune --grid`
+- **Purpose:** Tune XGBoost on grouped folds inside the training buildings.
+- **Split / seed:** 2 grouped folds (28 buildings each), 20% row subsample; seed 42.
+- **Config:** 6 explicit candidates, 250 rounds, early stopping 25, metric = fold-mean PR-AUC.
+- **Metrics:** candidate PR-AUC 0.7732–0.7758 (spread 0.3% relative). Selected candidate 2 (depth 8, lr 0.03, λ 5).
+- **Artifacts:** `results/metrics/optuna_xgb_best.json`, `experiments/optuna_xgb_DISCARDED_replay.db`
+- **Type:** selection
+- **Notes:** the TPE study was stopped after 11 trials (~100 s each) and is **invalid**: resuming a persisted study restarts TPE's seeded random startup phase, so trials 5–7 exactly replayed the parameter sets of trials 0–2. The DB is kept as evidence, not used. Fix recorded in `src/models/tune.py` (`--fresh` default, explicit warning on resume).
+
+## E-004 — Feature-family ablation
+
+- **Date:** 2026-11-09
+- **Command:** `python -m src.models.ablation --families level,deviation,dynamics,volatility` then `--families availability,calendar,peer`
+- **Purpose:** Attribute the signal to physical feature families.
+- **Split / seed:** val; seed 42.
+- **Config:** one model per family, 800 rounds, early stopping 50.
+- **Metrics:** dynamics 0.9284 / 0.7657; deviation 0.9072 / 0.7268; level 0.9011 / 0.6734; volatility 0.8290 / 0.4507; peer 0.7798 / 0.3805; calendar 0.7290 / 0.0640; availability 0.6492 / 0.0870 (ROC-AUC / PR-AUC).
+- **Artifacts:** `results/metrics/ablation_families_only.json`, `results/tables/ablation_families_only.csv`
+- **Type:** diagnostic
+- **Notes:** the `peer` row was measured with `include_peer=True` (v1 feature set); the feature was later removed (D-012) and is not part of the final model.
+
+## E-005 — Final model selection and single test-set evaluation
+
+- **Date:** 2026-11-09
+- **Command:** `python -m src.models.train_xgboost` → `--params-from ... --tag tuned` → `--weighted` → `python -m src.models.select_final` → `python -m src.evaluation.holdout --variant final`
+- **Purpose:** Choose the final model on validation, then report the held-out result once.
+- **Split / seed:** train 140 / val 30 / test 30 buildings; seed 42.
+- **Config:** XGBoost hist, early stopping 75 on validation aucpr; final = candidate 2 params (depth 8, lr 0.03, min_child_weight 10, subsample 0.9, colsample 0.6, λ 5, α 0.1), 734 trees.
+- **Metrics (test, 30 buildings, 243,684 rows):** ROC-AUC 0.9524 (95% CI 0.9249–0.9702), PR-AUC 0.8342, Brier 0.00613, ECE 0.0005, recall@FPR1% 0.8089, precision/recall 0.7987/0.7888 at threshold 0.1283, event recall 0.8228 (441/536 events), median latency 1 h, 0.056 false-alarm episodes per building-day, median per-building recall 0.842.
+- **Artifacts:** `models/xgb_final.json`, `results/metrics/holdout_test_final.json`, `results/predictions/test_predictions_final.parquet`, `results/tables/holdout_per_building_final.csv`, 4 figures, `results/tables/model_comparison_{val,test}.csv`
+- **Type:** reporting
+
+---
+
+<!-- Template for new entries:
 
 ## E-NNN — <title>
 

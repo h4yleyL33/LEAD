@@ -43,6 +43,24 @@ MAX_ROUNDS = 250
 EARLY_STOP = 25
 N_FOLDS_USED = 2
 
+# Six candidate configurations: the hand-set default, the best point found by the capped TPE
+# search, and four deliberately different regions of the space (shallower/deeper, faster/slower
+# learning, stronger/weaker regularisation). Small and explicit on purpose -- see E-003.
+GRID_CANDIDATES: list[dict] = [
+    {"max_depth": 6, "learning_rate": 0.05, "min_child_weight": 5.0, "subsample": 0.8,
+     "colsample_bytree": 0.8, "reg_lambda": 1.0, "reg_alpha": 0.0, "gamma": 0.0},
+    {"max_depth": 5, "learning_rate": 0.051, "min_child_weight": 3.65, "subsample": 0.716,
+     "colsample_bytree": 0.806, "reg_lambda": 0.209, "reg_alpha": 0.012, "gamma": 1.83},
+    {"max_depth": 8, "learning_rate": 0.03, "min_child_weight": 10.0, "subsample": 0.9,
+     "colsample_bytree": 0.6, "reg_lambda": 5.0, "reg_alpha": 0.1, "gamma": 0.0},
+    {"max_depth": 4, "learning_rate": 0.08, "min_child_weight": 2.0, "subsample": 0.7,
+     "colsample_bytree": 0.9, "reg_lambda": 1.0, "reg_alpha": 0.0, "gamma": 0.5},
+    {"max_depth": 6, "learning_rate": 0.03, "min_child_weight": 8.0, "subsample": 0.85,
+     "colsample_bytree": 0.7, "reg_lambda": 2.0, "reg_alpha": 0.5, "gamma": 2.0},
+    {"max_depth": 7, "learning_rate": 0.06, "min_child_weight": 4.0, "subsample": 0.8,
+     "colsample_bytree": 0.75, "reg_lambda": 0.5, "reg_alpha": 0.05, "gamma": 1.0},
+]
+
 
 def build_folds(df, splits) -> list[tuple[np.ndarray, np.ndarray]]:
     """Three (train_idx, valid_idx) pairs over the training buildings, by building group."""
@@ -64,6 +82,8 @@ def main() -> int:
                     help="delete an existing study before searching (default)")
     ap.add_argument("--no-fresh", dest="fresh", action="store_false",
                     help="resume the persisted study")
+    ap.add_argument("--grid", action="store_true",
+                    help="run the deterministic 6-candidate grid instead of a TPE search")
     args = ap.parse_args()
 
     df = load_features()
@@ -112,6 +132,46 @@ def main() -> int:
 
     EXPERIMENTS_DIR.mkdir(parents=True, exist_ok=True)
     db_path = EXPERIMENTS_DIR / "optuna_xgb.db"
+
+    if args.grid:
+        # Deterministic candidate list. Used after the TPE search proved expensive per trial and
+        # after a resumed study replayed identical parameter sets (see EXPERIMENT_LOG E-003).
+        rows = []
+        for i, cand in enumerate(GRID_CANDIDATES):
+            t = time.time()
+            params = {
+                "objective": "binary:logistic", "eval_metric": "aucpr", "tree_method": "hist",
+                "n_estimators": MAX_ROUNDS, "early_stopping_rounds": EARLY_STOP,
+                "random_state": args.seed, "n_jobs": -1, **cand,
+            }
+            scores, iters = [], []
+            for tr_idx, va_idx in fold_data:
+                model = xgb.XGBClassifier(**params)
+                model.fit(X[tr_idx], y[tr_idx], eval_set=[(X[va_idx], y[va_idx])], verbose=False)
+                scores.append(average_precision_score(
+                    y[va_idx], model.predict_proba(X[va_idx])[:, 1]))
+                iters.append(int(getattr(model, "best_iteration", MAX_ROUNDS) or MAX_ROUNDS))
+            rows.append({"candidate": i, "params": cand, "fold_mean_pr_auc": float(np.mean(scores)),
+                         "best_iteration_mean": float(np.mean(iters)),
+                         "seconds": round(time.time() - t, 1)})
+            print(f"cand {i}: PR-AUC {rows[-1]['fold_mean_pr_auc']:.5f}  "
+                  f"({rows[-1]['seconds']}s)  {cand}")
+
+        best = max(rows, key=lambda r: r["fold_mean_pr_auc"])
+        payload = {
+            "search": "deterministic grid (6 candidates), 2 grouped folds, 20% row subsample",
+            "best_value": best["fold_mean_pr_auc"],
+            "best_params": best["params"],
+            "best_candidate": best["candidate"],
+            "candidates": rows,
+            "subsample_fraction": SUBSAMPLE_FRACTION,
+            "max_rounds": MAX_ROUNDS,
+        }
+        out = METRICS_DIR / "optuna_xgb_best.json"
+        out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        print(f"\nbest candidate {best['candidate']} -> {out}")
+        return 0
+
     if args.fresh and db_path.exists():
         db_path.unlink()
         print(f"removed previous study ({db_path.name}) -- see --no-fresh to resume")

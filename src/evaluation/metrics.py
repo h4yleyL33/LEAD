@@ -152,6 +152,52 @@ def event_metrics(
     }
 
 
+def _bin_edges(p: np.ndarray, bins: int, strategy: str) -> np.ndarray:
+    if strategy == "quantile":
+        edges = np.unique(np.quantile(p, np.linspace(0.0, 1.0, bins + 1)))
+    else:
+        edges = np.linspace(0.0, 1.0, bins + 1)
+    if len(edges) < 2:  # degenerate: all predictions identical
+        edges = np.array([float(p.min()), float(p.max()) + 1e-12])
+    return edges
+
+
+def reliability_curve(
+    y_true: np.ndarray, y_score: np.ndarray, bins: int = 12, strategy: str = "quantile"
+) -> dict:
+    """Binned reliability data: mean predicted probability vs observed rate, with bin counts.
+
+    Quantile binning is used by default because predicted probabilities in a 2%-prevalence problem
+    are concentrated near zero; equal-width bins would collapse every prediction into the first bin
+    and produce a two-point "curve" that says nothing about the high-confidence region.
+    """
+    y_true = np.asarray(y_true).astype(int)
+    p = np.asarray(y_score, dtype=float)
+    edges = _bin_edges(p, bins, strategy)
+    idx = np.clip(np.digitize(p, edges[1:-1]), 0, len(edges) - 2)
+
+    centers, observed, counts = [], [], []
+    for b in range(len(edges) - 1):
+        m = idx == b
+        if not m.any():
+            continue
+        centers.append(float(p[m].mean()))
+        observed.append(float(y_true[m].mean()))
+        counts.append(int(m.sum()))
+    return {"mean_predicted": centers, "observed": observed, "count": counts,
+            "strategy": strategy, "n_bins_used": len(centers)}
+
+
+def expected_calibration_error(
+    y_true: np.ndarray, y_score: np.ndarray, bins: int = 12, strategy: str = "quantile"
+) -> float:
+    """Weighted mean |observed - predicted| across bins. Report with its binning strategy."""
+    curve = reliability_curve(y_true, y_score, bins=bins, strategy=strategy)
+    total = sum(curve["count"]) or 1
+    return float(sum(c * abs(o - m) for c, o, m in
+                     zip(curve["count"], curve["observed"], curve["mean_predicted"])) / total)
+
+
 def bootstrap_auc_ci(
     y_true: np.ndarray,
     y_score: np.ndarray,

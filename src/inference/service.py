@@ -60,7 +60,7 @@ class ScoreResult:
 class AnomalyScorer:
     """Loads one XGBoost model plus its validation-selected threshold."""
 
-    def __init__(self, variant: str = "primary", models_dir: Path | None = None):
+    def __init__(self, variant: str = "final", models_dir: Path | None = None):
         self.variant = variant
         self.model_tag = f"xgboost_{variant}"
         mdir = models_dir or MODELS_DIR

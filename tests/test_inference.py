@@ -16,14 +16,14 @@ from src.inference.service import AnomalyScorer, MIN_HISTORY_HOURS
 from src.utils.config import GROUP_COL, MODELS_DIR, TIME_COL, VALUE_COL
 
 pytestmark = pytest.mark.skipif(
-    not (MODELS_DIR / "xgb_primary.json").exists(),
+    not (MODELS_DIR / "xgb_final.json").exists(),
     reason="trained model not present; run `python -m src.models.train_xgboost`",
 )
 
 
 @pytest.fixture(scope="module")
 def scorer() -> AnomalyScorer:
-    return AnomalyScorer("primary")
+    return AnomalyScorer()
 
 
 @pytest.fixture(scope="module")
