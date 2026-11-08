@@ -1,0 +1,5 @@
+equipment,fault_kind,n_hours,fault_hours,hours_flagged,fault_hours_flagged,fault_recall,false_positive_rate,roc_auc,pr_auc,median_score_fault,median_score_normal,simulated
+bearing,bearing_overheat,2160,72,0,0,0.0,0.0,0.579,0.0943,0.00063,0.00051,True
+compressor,compressor_fouling,2160,120,0,0,0.0,0.0,0.3892,0.0416,0.00082,0.00111,True
+pump,cavitation,2160,36,0,0,0.0,0.0,0.8678,0.1415,0.00395,0.00109,True
+separator,level_drift,2160,24,1,0,0.0,0.0005,0.9536,0.1101,0.00387,0.00079,True

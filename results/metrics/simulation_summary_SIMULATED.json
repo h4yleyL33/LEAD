@@ -1,0 +1,20 @@
+{
+  "rows": 8640,
+  "equipment": [
+    "bearing",
+    "compressor",
+    "pump",
+    "separator"
+  ],
+  "signals": [
+    "bearing_temp_c",
+    "compressor_current_a",
+    "pump_power_kw",
+    "separator_level_pct"
+  ],
+  "faults": 4,
+  "hours": 2160,
+  "signals_path": "data\\synthetic\\geothermal_signals_SIMULATED.csv",
+  "truth_path": "data\\synthetic\\geothermal_faults_SIMULATED.json",
+  "simulated": true
+}

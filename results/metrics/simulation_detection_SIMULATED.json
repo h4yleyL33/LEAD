@@ -1,0 +1,76 @@
+{
+  "simulated": true,
+  "warning": "SYNTHETIC GEOTHERMAL SIGNALS. Not PLTP Kamojang measurements. This is a pipeline smoke test of an electricity-trained model on a different asset class, not a validation of geothermal performance.",
+  "model": "xgboost_final",
+  "threshold": 0.1282797332042575,
+  "aggregate": {
+    "fault_hours": 252,
+    "fault_hours_flagged_at_frozen_threshold": 0,
+    "fault_recall_at_frozen_threshold": 0.0,
+    "mean_roc_auc": 0.6974,
+    "mean_pr_auc": 0.0969
+  },
+  "conclusion": "The frozen operating threshold does not transfer: scores on the simulated signals sit an order of magnitude below the building-calibrated threshold, so almost no fault hour is flagged even where the ranking is good (separator ROC-AUC 0.95). Ranking quality is also mixed (bearing 0.58, compressor 0.39). Interpretation: the detector needs per-asset recalibration and ideally retraining before any geothermal deployment; this simulation is evidence about the pipeline, not about the plant.",
+  "results": [
+    {
+      "equipment": "bearing",
+      "fault_kind": "bearing_overheat",
+      "n_hours": 2160,
+      "fault_hours": 72,
+      "hours_flagged": 0,
+      "fault_hours_flagged": 0,
+      "fault_recall": 0.0,
+      "false_positive_rate": 0.0,
+      "roc_auc": 0.579,
+      "pr_auc": 0.0943,
+      "median_score_fault": 0.00063,
+      "median_score_normal": 0.00051,
+      "simulated": true
+    },
+    {
+      "equipment": "compressor",
+      "fault_kind": "compressor_fouling",
+      "n_hours": 2160,
+      "fault_hours": 120,
+      "hours_flagged": 0,
+      "fault_hours_flagged": 0,
+      "fault_recall": 0.0,
+      "false_positive_rate": 0.0,
+      "roc_auc": 0.3892,
+      "pr_auc": 0.0416,
+      "median_score_fault": 0.00082,
+      "median_score_normal": 0.00111,
+      "simulated": true
+    },
+    {
+      "equipment": "pump",
+      "fault_kind": "cavitation",
+      "n_hours": 2160,
+      "fault_hours": 36,
+      "hours_flagged": 0,
+      "fault_hours_flagged": 0,
+      "fault_recall": 0.0,
+      "false_positive_rate": 0.0,
+      "roc_auc": 0.8678,
+      "pr_auc": 0.1415,
+      "median_score_fault": 0.00395,
+      "median_score_normal": 0.00109,
+      "simulated": true
+    },
+    {
+      "equipment": "separator",
+      "fault_kind": "level_drift",
+      "n_hours": 2160,
+      "fault_hours": 24,
+      "hours_flagged": 1,
+      "fault_hours_flagged": 0,
+      "fault_recall": 0.0,
+      "false_positive_rate": 0.0005,
+      "roc_auc": 0.9536,
+      "pr_auc": 0.1101,
+      "median_score_fault": 0.00387,
+      "median_score_normal": 0.00079,
+      "simulated": true
+    }
+  ]
+}
