@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data (never commit raw or derived large data)
+data/raw/*
+!data/raw/README.md
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/README.md
+data/synthetic/*
+!data/synthetic/README.md
+
+# Models & large artifacts
+models/*.json
+models/*.ubj
+models/*.pkl
+models/*.joblib
+models/*.onnx
+results/predictions/*.csv
+experiments/runs/
+
+# Secrets
+.env
+.env.*
+!.env.example
+kaggle.json
+~/.kaggle/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# LaTeX build
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+
+# Misc
+*.log

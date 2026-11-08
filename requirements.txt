@@ -1,0 +1,25 @@
+# Core scientific stack — pinned to the versions used for all reported results.
+# Verified working on CPython 3.14.9 (Windows 11). Python >= 3.12 required.
+numpy==2.5.4
+pandas==3.1.1
+scipy==1.18.1
+scikit-learn==1.9.1
+xgboost==3.4.1
+pyarrow==26.0.1
+
+# Optimisation & explainability
+optuna==5.0.0
+shap==0.54.1
+
+# Visualisation
+matplotlib==3.11.2
+seaborn==0.13.2
+
+# Serving
+fastapi==0.162.2
+uvicorn==0.54.0
+pydantic==2.14.3
+
+# Testing
+pytest==9.2.0
+httpx==0.28.1
