@@ -20,6 +20,9 @@ SYNTHETIC_DIR = DATA_DIR / "synthetic"
 LEAD_RAW_CSV = RAW_DIR / "lead" / "lead1.0-small.csv"
 LEAD_RAW_ZIP = RAW_DIR / "lead" / "lead1.0-small.zip"
 
+FEATURES_PARQUET = PROCESSED_DIR / "features.parquet"
+SPLITS_JSON = PROCESSED_DIR / "splits.json"
+
 MODELS_DIR = PROJECT_ROOT / "models"
 RESULTS_DIR = PROJECT_ROOT / "results"
 FIGURES_DIR = RESULTS_DIR / "figures"

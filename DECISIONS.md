@@ -101,3 +101,27 @@ is furthest behind its target share (140/30/30). Train is further partitioned in
 **Consequences:** (+) Anomaly rate 2.162% / 2.049% / 2.072% across splits. (−) Assignment depends on
 the anomaly rate, which uses labels — acceptable because the split is fixed before modelling and is
 never re-drawn per experiment.
+
+## D-011 — Train and score only on observed readings; outages are a separate alarm class
+**Date:** 2026-11-09
+**Context:** In LEAD1.0, 0 of the 107,653 hours without a `meter_reading` carry a positive label — an
+absent reading cannot be annotated. A model trained on all rows therefore learns the deterministic
+rule "missing ⇒ normal", which is both a 6.15% free lunch on every metric and operationally wrong: a
+dead sensor is a fault. Measured impact of removing the rule: ROC-AUC 0.9576 → 0.9554.
+**Decision:** Drop rows with no reading from training and from all reported metrics; the API reports
+such hours as `OUTAGE`, a distinct alarm type, instead of scoring them.
+**Consequences:** (+) Metrics describe genuine signal detection; the model is never taught that a
+silent asset is healthy. (−) The reported anomaly rate (2.27% on observed rows) differs from the
+dataset-wide 2.13%, and the two must not be mixed in the paper.
+
+## D-012 — No cross-building "peer" feature
+**Date:** 2026-11-09
+**Context:** A cross-sectional feature (`f_peer_dev`, deviation from the median building at the same
+hour) is legitimate at training time but not reproducible when scoring one building alone, so the
+serving path produced 0.0339 where the batch path produced 0.0216 — a 57% discrepancy caught by
+`tests/test_inference.py`.
+**Decision:** Remove the peer feature. Every feature must be computable from a single building's own
+history. `build_feature_frame(..., include_peer=True)` retains it for reproducing the ablation.
+**Consequences:** (+) Exact train/serve agreement (verified to 1e-6) and a deployment that needs no
+cross-building infrastructure. (−) The family-only measurement (ROC-AUC 0.7798) is recorded but
+unused; removing it did not hurt — validation ROC-AUC 0.9539 → 0.9543, PR-AUC 0.8200 → 0.8239.

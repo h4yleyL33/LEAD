@@ -1,6 +1,6 @@
 {
   "n_rows": 1749494,
-  "n_features": 36,
+  "n_features": 35,
   "features": [
     "f_log_value",
     "f_ratio_med_6",
@@ -36,8 +36,7 @@
     "f_dow_sin",
     "f_dow_cos",
     "f_month",
-    "f_is_weekend",
-    "f_peer_dev"
+    "f_is_weekend"
   ],
   "families": {
     "f_log_value": "level",
@@ -74,9 +73,9 @@
     "f_dow_sin": "calendar",
     "f_dow_cos": "calendar",
     "f_month": "calendar",
-    "f_is_weekend": "calendar",
-    "f_peer_dev": "peer"
+    "f_is_weekend": "calendar"
   },
+  "include_peer": false,
   "windows_hours": {
     "6": 3,
     "24": 12,
@@ -118,8 +117,7 @@
     "f_dow_sin": 0.0,
     "f_dow_cos": 0.0,
     "f_month": 0.0,
-    "f_is_weekend": 0.0,
-    "f_peer_dev": 0.0650713863551404
+    "f_is_weekend": 0.0
   },
   "grid_start": "2016-01-01 00:00:00",
   "grid_end": "2016-12-31 23:00:00",

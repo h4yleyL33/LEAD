@@ -9,7 +9,9 @@ Consequences:
   * no centred windows, no forward fills from the future, no target-derived encodings;
   * `building_id` is never a feature (the evaluation protocol is building-disjoint, so an
     identifier cannot generalise);
-  * peer features use only *contemporaneous* values of other buildings (observable at t).
+  * every feature is computable from a single building's own history, so serving cannot diverge
+    from training. A cross-building "peer" feature was built and then removed for exactly this
+    reason (D-012).
 
 Implementation notes:
   * Each building is reindexed onto the full hourly grid of the dataset so that a rolling
@@ -77,6 +79,7 @@ def build_feature_frame(
     grid_start: pd.Timestamp | None = None,
     grid_end: pd.Timestamp | None = None,
     return_wide: bool = False,
+    include_peer: bool = False,
 ):
     """Build the causal feature matrix.
 
@@ -192,10 +195,16 @@ def build_feature_frame(
          "calendar")
 
     # ---- family: peer context (contemporaneous cross-section, scale-free)
-    ratio24 = feats["f_ratio_med_24"]
-    peer_med = ratio24.median(axis=1, skipna=True)
-    feats["f_peer_dev"] = ratio24.sub(peer_med, axis=0)
-    _tag(["f_peer_dev"], "peer")
+    #
+    # Disabled by default (D-012). A cross-sectional median computed over the whole building pool
+    # cannot be reproduced when scoring a single building at inference time, which breaks
+    # train/serve consistency (caught by tests/test_inference.py). It was measured once
+    # (family-only ROC-AUC 0.7798) and left out: the remaining features are self-contained.
+    if include_peer:
+        ratio24 = feats["f_ratio_med_24"]
+        peer_med = ratio24.median(axis=1, skipna=True)
+        feats["f_peer_dev"] = ratio24.sub(peer_med, axis=0)
+        _tag(["f_peer_dev"], "peer")
 
     # ---------------------------------------------------------------- wide -> long
     names = list(feats.keys())
@@ -242,7 +251,8 @@ def main() -> int:
     print(f"feature rows: {len(X):,}  feature cols: {len(feature_names(X))}")
 
     # Attach the label by exact (building, timestamp) join -- never by row order.
-    y = raw[[GROUP_COL, TIME_COL, TARGET_COL]]
+    # The raw reading is carried along for the API/dashboard (it is never a feature).
+    y = raw[[GROUP_COL, TIME_COL, TARGET_COL, VALUE_COL]]
     X = X.merge(y, on=[GROUP_COL, TIME_COL], how="inner", validate="one_to_one")
     print(f"joined rows: {len(X):,}  (raw {len(raw):,})")
     if len(X) != len(raw):
@@ -258,6 +268,7 @@ def main() -> int:
         "n_features": len(feature_names(X)),
         "features": feature_names(X),
         "families": {f: FAMILY.get(f, "unknown") for f in feature_names(X)},
+        "include_peer": False,
         "windows_hours": {str(k): v for k, v in WINDOWS.items()},
         "nan_rates": {f: float(X[f].isna().mean()) for f in feature_names(X)},
         "grid_start": str(X[TIME_COL].min()),
