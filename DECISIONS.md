@@ -71,3 +71,33 @@ informative (sensor outage).
 imputation. A binary `is_missing` indicator is available as a feature.
 **Consequences:** Fair comparison without discarding 6% of the data; missingness is modelled
 explicitly rather than silently dropped.
+
+## D-008 — Causal feature contract enforced by an executable truncation test
+**Date:** 2026-11-09
+**Context:** Median lag-1 autocorrelation is 0.933, so any accidental forward-looking feature would
+inflate AUC to a meaningless level without being visible in code review.
+**Decision:** Features must be deterministic functions of readings at times ≤ t. This is verified by
+rebuilding the feature matrix on history truncated at T and asserting bit-identity of every value at
+t ≤ T (`tests/test_features_no_leakage.py`). Baselines are computed on `series.shift(1)`.
+**Consequences:** (+) Leakage becomes a test failure, not a reviewer opinion. (−) Roughly 30 s of
+extra test runtime; no centred smoothing is available even where it would be convenient.
+
+## D-009 — Grid reindexing per building before rolling windows
+**Date:** 2026-11-09
+**Context:** 7,306 (building, hour) cells are absent and 6.15% of readings are NaN, so row-based
+rolling windows would span variable amounts of wall-clock time.
+**Decision:** Reindex each building onto the dataset's full hourly grid, compute rolling statistics
+there, then emit features only for rows that exist in the source data.
+**Consequences:** (+) A 24 h window always means 24 h. (−) Absent hours must not be re-emitted as
+training rows; enforced by a row-count assertion in `build_features.main()`.
+
+## D-010 — 140 / 30 / 30 building split, balanced by anomaly rate
+**Date:** 2026-11-09
+**Context:** Building-disjoint splitting (D-002) with an unlucky assignment would leave the test set
+with a materially different anomaly rate than train, making the holdout number hard to interpret.
+**Decision:** Sort buildings by per-building anomaly rate and greedily assign each to whichever split
+is furthest behind its target share (140/30/30). Train is further partitioned into 5 grouped folds
+(28 buildings each) for tuning.
+**Consequences:** (+) Anomaly rate 2.162% / 2.049% / 2.072% across splits. (−) Assignment depends on
+the anomaly rate, which uses labels — acceptable because the split is fixed before modelling and is
+never re-drawn per experiment.
