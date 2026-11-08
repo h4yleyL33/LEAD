@@ -1,0 +1,68 @@
+{
+  "class_balance": {
+    "normal": 1712198,
+    "anomaly": 37296
+  },
+  "load_profile": {
+    "anomaly_rate_by_hour_pct": {
+      "0": 2.2964,
+      "1": 1.9969,
+      "2": 2.1876,
+      "3": 2.2141,
+      "4": 2.2412,
+      "5": 2.3114,
+      "6": 2.2859,
+      "7": 2.2272,
+      "8": 2.1801,
+      "9": 2.2568,
+      "10": 2.2743,
+      "11": 2.2702,
+      "12": 2.228,
+      "13": 2.1858,
+      "14": 2.1995,
+      "15": 2.1383,
+      "16": 1.9367,
+      "17": 1.9621,
+      "18": 1.8345,
+      "19": 1.914,
+      "20": 1.8894,
+      "21": 1.8896,
+      "22": 2.1428,
+      "23": 2.1003
+    },
+    "peak_anomaly_hour": 5,
+    "min_anomaly_hour": 18
+  },
+  "week_heatmap": {
+    "max_cell_pct": 3.605,
+    "min_cell_pct": 1.1
+  },
+  "building_distribution": {
+    "median_rate_pct": 1.9354,
+    "iqr_pct": [
+      1.2658,
+      2.7294
+    ]
+  },
+  "timeseries_examples": {
+    "example_buildings": [
+      1074,
+      1260
+    ]
+  },
+  "missingness": {
+    "buildings_over_10pct_missing": 31,
+    "buildings_over_50pct_missing": 2
+  },
+  "autocorrelation": {
+    "n_buildings": 200,
+    "acf_lag1_median": 0.9328,
+    "acf_lag24_median": 0.681
+  },
+  "event_lengths": {
+    "n_events": 5503,
+    "median_h": 2.0,
+    "p95_h": 24.0,
+    "max_h": 167
+  }
+}
