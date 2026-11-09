@@ -173,8 +173,15 @@ def main() -> int:
         return 0
 
     if args.fresh and db_path.exists():
-        db_path.unlink()
-        print(f"removed previous study ({db_path.name}) -- see --no-fresh to resume")
+        try:
+            db_path.unlink()
+            print(f"removed previous study ({db_path.name}) -- see --no-fresh to resume")
+        except PermissionError:
+            # Another tune process holds the SQLite file. Do not die: use a run-specific store so
+            # concurrent searches cannot corrupt or block each other.
+            db_path = EXPERIMENTS_DIR / f"optuna_xgb_{time.strftime('%Y%m%d_%H%M%S')}.db"
+            print(f"{db_path.name}: previous study is locked by another process, "
+                  f"using a separate store instead")
     storage = f"sqlite:///{db_path.as_posix()}"
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     study = optuna.create_study(
