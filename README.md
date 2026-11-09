@@ -1,19 +1,19 @@
-# AIoT Energy Anomaly Detection — Hourly Telemetry, with a Geothermal Transfer Test
+# AIoT Energy Anomaly Detection: Hourly Telemetry with a Geothermal Transfer Test
 
 Reproducible CRISP-DM research and software pipeline for anomaly detection on hourly energy telemetry:
 causal feature engineering, XGBoost, building-disjoint evaluation, a FastAPI service, an interactive
 dashboard, a simulated geothermal auxiliary-equipment module, and an IEEE manuscript whose numbers are
 verified against the artefacts by test.
 
-> **Integrity note.** The model is trained and evaluated on **real annotated data** (LEAD1.0-small,
+> **Integrity note.** The model is trained and evaluated on real annotated data (LEAD1.0-small,
 > 1.75 M hourly readings from 200 commercial buildings). The geothermal equipment signals are
 > **SIMULATED** and are never presented as measurements from PLTP Kamojang. Every file, figure and
 > API payload that contains them says so. See `data/README.md` and `BLOCKERS.md`.
 
 ## Headline results
 
-Held-out test set — 30 buildings the model never saw, 243,684 observed hours, 5,454 anomalies,
-scored **once** with a frozen model and a validation-selected threshold:
+Held-out test set: 30 buildings unseen by the model, 243,684 observed hours, 5,454 anomalies,
+scored once with a frozen model and a validation-selected threshold:
 
 | Metric | Value |
 |---|---|
@@ -25,9 +25,9 @@ scored **once** with a frozen model and a validation-selected threshold:
 | Episode recall | 0.8228 (441 of 536), median latency 1 h |
 | False-alarm episodes | 0.056 per building-day |
 
-Negative results reported in full: calendar features rank rows without detecting anomalies
+Negative results are reported in full. Calendar features rank rows without detecting anomalies
 (PR-AUC 0.064); class weighting triples the Brier score for 1.6 points of episode recall; per-building
-recall spans 0.02–1.00; and a threshold calibrated on buildings flags **0 of 252** injected fault hours
+recall spans 0.02–1.00; and a threshold calibrated on buildings flags 0 of 252 injected fault hours
 in the simulated geothermal transfer test.
 
 ## Quick start
@@ -51,7 +51,7 @@ python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 #   dashboard: http://127.0.0.1:8000/      API docs: http://127.0.0.1:8000/docs
 ```
 
-Individual stages are all runnable on their own — `python -m src.data.audit`,
+Individual stages are all runnable on their own: `python -m src.data.audit`,
 `python -m src.features.build_features`, `python -m src.models.train_xgboost`, and so on. The full
 order and the dependencies between stages are listed in `scripts/run_all.py`.
 
@@ -95,7 +95,7 @@ order and the dependencies between stages are listed in `scripts/run_all.py`.
 ## Known limitations
 
 1. **No plant data.** B-002: the geothermal module is synthetic. The transfer test is evidence about
-   the pipeline, not about Kamojang.
+   the pipeline, and it is not evidence about Kamojang.
 2. **No leaderboard comparability.** B-001: the Kaggle competition split needs credentials; the public
    annotated subset is used instead, so no published score is quoted next to ours.
 3. **No compiled PDF.** B-003: no LaTeX in this environment. `paper/main.tex` is complete and

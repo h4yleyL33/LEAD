@@ -30,7 +30,7 @@ threshold chosen on validation (0.1283). Nothing below was re-tuned after seeing
 | Median detection latency | **1 hour** |
 | False-alarm episodes per building-day | 0.056 |
 
-The confidence interval is wide (±0.023) because it resamples *buildings*, not rows — 30 clusters is
+The confidence interval is wide (±0.023) because it resamples *buildings*, not rows: 30 clusters is
 what the protocol gives, and a row bootstrap would have produced a falsely narrow interval.
 
 ## 5.2 Point ranking vs episode detection
@@ -43,7 +43,7 @@ The two metric families disagree in an instructive way:
 The gap runs the *good* direction here (episodes are easier than individual hours, because an
 episode only needs one flagged hour), and it is the number a maintenance team cares about: "did we
 raise an alarm for this fault, and how long after it started?" Both are reported because a model can
-score well on one and badly on the other — the family ablation in §4.6 shows level-only features at
+score well on one and badly on the other; the family ablation in §4.6 shows level-only features at
 0.90 ROC-AUC but 0.43 event recall.
 
 ## 5.3 Calibration
@@ -81,7 +81,7 @@ This is an intrinsic property of self-referential anomaly detection, not a bug, 
 deployment caveat: the model detects deviations from a building's *learned* normal, so a building
 that is chronically abnormal will be under-flagged.
 
-The distribution is bimodal rather than uniform — 8 buildings above 0.9, 4 below 0.5 — which means
+The distribution is bimodal rather than uniform: 8 buildings above 0.9, 4 below 0.5, which means
 an aggregate AUC hides real heterogeneity. Any deployment should report per-asset recall, which is
 why the per-building table is a first-class artefact and not an appendix.
 

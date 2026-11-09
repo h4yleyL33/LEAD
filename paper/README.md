@@ -1,6 +1,6 @@
 # Manuscript
 
-`main.tex` — IEEE conference format (`IEEEtran`, `conference` option), two columns.
+`main.tex` is in IEEE conference format (`IEEEtran`, `conference` option), two columns.
 Every number in it comes from `results/metrics/*.json`; `tests/test_paper_numbers.py` fails if the
 two ever disagree.
 
@@ -11,7 +11,7 @@ python scripts/build_paper.py          # copies figures, validates, then runs pd
 ```
 
 Requires a LaTeX distribution with the `IEEEtran` class (MiKTeX or TeX Live). This environment has
-none, so **no PDF is committed** — see blocker B-003 in `../BLOCKERS.md`. The source validates
+none, so no PDF is committed; see blocker B-003 in `../BLOCKERS.md`. The source validates
 structurally (citations, labels, figures, brace balance), but it has not been compiled here, and a
 manuscript that has never been compiled should not be claimed as camera-ready.
 
@@ -50,7 +50,7 @@ plot that no script produced.
 ## Claims that are deliberately absent
 
 - No comparison with published LEAD1.0 leaderboard numbers (different split, metrics not
-  reproducible here — B-001).
+  reproducible here; B-001).
 - No claim about PLTP Kamojang performance. The geothermal experiment is **SIMULATED** and is
   described as a pipeline test with a negative transfer result.
 - No claim that the model is production-ready: there is no authentication, no drift detection and no

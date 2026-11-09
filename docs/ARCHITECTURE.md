@@ -1,6 +1,6 @@
 # Architecture
 
-How the pieces fit, in one page. If you are reading the code for the first time, read this first.
+How the components fit together, in one page. Read this first if the code is new to you.
 
 ## Data flow
 
@@ -44,7 +44,8 @@ HTTP ──► backend/app/main.py ──► src/inference/service.py ──► 
 
 **Invariant:** features are computed by exactly one function. `tests/test_inference.py` scores the
 same row through the API path and the stored feature matrix and requires agreement to 1e-6. This is
-what makes the "train/serve consistency" claim in the paper checkable rather than aspirational.
+what makes the "train/serve consistency" claim in the paper verifiable against the code
+rather than aspirational.
 
 ## Module responsibilities
 
@@ -65,15 +66,15 @@ what makes the "train/serve consistency" claim in the paper checkable rather tha
 
 ## Rules the code enforces
 
-1. **No feature may look forward.** Verified by truncation test, not by review.
-2. **No identifier as a feature.** `building_id` never enters the matrix; the protocol is
+1. No feature may look forward. Verified by truncation test, not by review.
+2. No identifier as a feature. `building_id` never enters the matrix; the protocol is
    building-disjoint.
-3. **No cross-asset features.** Every feature must be computable from one asset's history, otherwise
+3. No cross-asset features. Every feature must be computable from one asset's history, otherwise
    serving cannot reproduce training (D-012).
-4. **No unobserved rows in training or metrics.** A missing reading is never labelled anomalous, so
+4. No unobserved rows in training or metrics. A missing reading is never labelled anomalous, so
    including it teaches the wrong rule (D-011).
-5. **The test split is read once.** `holdout.py` is run against a frozen `xgb_final.json`.
-6. **Numbers flow from script to document.** The paper test compares `paper/main.tex` against
+5. The test split is read once. `holdout.py` is run against a frozen `xgb_final.json`.
+6. Numbers flow from script to document. The paper test compares `paper/main.tex` against
    `results/metrics/*.json` and fails on drift.
 
 ## Where to change things

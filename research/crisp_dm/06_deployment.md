@@ -99,7 +99,7 @@ This is the honest headline of the simulation, and it is not flattering:
   magnitude below the building-calibrated 0.1283, so the alarm never fires even where ranking is
   good (separator: ROC-AUC 0.95, zero alarms). A frozen absolute threshold is only valid for the
   population it was calibrated on.
-- **Ranking transfers only partially** — well for a slow drift, badly for compressor fouling, whose
+- **Ranking transfers only partially**: well for a slow drift, badly for compressor fouling, whose
   ramp is small relative to that signal's own noise.
 - **Conclusion:** deploying on geothermal equipment requires per-asset recalibration and, more
   likely, retraining on plant data. The simulation demonstrates that the pipeline runs end to end on
@@ -117,7 +117,7 @@ This is the honest headline of the simulation, and it is not flattering:
 
 Monitoring hooks that exist: `/health` for liveness, `/metrics` for the frozen evaluation numbers,
 and per-building recall in `/buildings` so a degradation in one asset is visible rather than averaged
-away. There is no drift detector — stated as a limitation, not pretended away.
+away. There is no drift detector, stated as a limitation, not pretended away.
 
 ## 6.6 What is deliberately absent
 
