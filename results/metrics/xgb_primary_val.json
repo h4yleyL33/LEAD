@@ -22,7 +22,7 @@
   "variant": "primary",
   "split_evaluated": "val",
   "best_iteration": 1069,
-  "fit_seconds": 374.2,
+  "fit_seconds": 237.9,
   "params": {
     "objective": "binary:logistic",
     "eval_metric": "aucpr",

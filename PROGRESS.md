@@ -15,11 +15,11 @@
 | 3 Data Preparation | M3 Features + splits + leakage tests | ✅ Done | `data/processed/features.parquet`, `splits.json`, 6/6 tests green |
 | 4 Modeling | M4 Baselines + XGBoost + tuning | ✅ Done | `results/tables/model_comparison_val.csv`, `models/xgb_final.json` |
 | 5 Evaluation | M5 Holdout, calibration, SHAP, errors | ✅ Done (SHAP pending in M6/M9) | `results/metrics/holdout_test_final.json`, 4 figures |
-| 6 Deployment | M6 FastAPI backend | 🔄 Next | `src/inference/service.py` ready |
-| 6 Deployment | M7 Interactive dashboard | ⬜ Pending | — |
-| 6 Deployment | M8 Geothermal simulation | ⬜ Pending | — |
-| — | M9 IEEE manuscript | ⬜ Pending | — |
-| — | M10 Reproducibility + final tests | ⬜ Pending | — |
+| 6 Deployment | M6 FastAPI backend | ✅ Done | `backend/app/main.py`, 13 API tests |
+| 6 Deployment | M7 Interactive dashboard | ✅ Done | `backend/app/static/index.html`, verified in browser |
+| 6 Deployment | M8 Geothermal simulation | ✅ Done | `src/simulation/`, `results/metrics/simulation_detection_SIMULATED.json` |
+| — | M9 IEEE manuscript | ✅ Done (source; no PDF — B-003) | `paper/main.tex`, 8 paper-vs-artefact tests |
+| — | M10 Reproducibility + final tests | ✅ Done | `scripts/run_all.py`, 41 tests green |
 
 ## Verified dataset facts (from `results/metrics/data_audit.json`)
 
@@ -67,13 +67,25 @@ Held-out test (30 unseen buildings, 243,684 rows, 5,454 anomalies) — opened on
 - **B-001** Kaggle competition split unavailable (no API credentials). Non-blocking for science;
   see `BLOCKERS.md`.
 
-## Next actions (ordered)
+## Completion status
 
-1. FastAPI backend (`backend/app`) exposing `/health`, `/model`, `/score`, `/batch`, `/simulate`.
-2. Interactive dashboard (single-page, served by the backend) over the scored test predictions.
-3. Geothermal equipment simulation (`src/simulation`, labelled SIMULATED throughout).
-4. SHAP explanations + IEEE manuscript from regenerated artifacts.
-5. `pytest` suite green end-to-end + reproducibility check (`make`-style script).
+| Requirement | State | Evidence |
+|---|---|---|
+| CRISP-DM pipeline documented and implemented | ✅ | `research/crisp_dm/01…06`, `scripts/run_all.py` (17 stages) |
+| XGBoost trained and evaluated on valid data | ✅ | `results/metrics/holdout_test_final.json`, real LEAD1.0 annotations |
+| Backend and interactive dashboard work | ✅ | `backend/app/main.py`, 13 API tests, dashboard verified in a browser |
+| Simulation module works | ✅ | `src/simulation/`, 4 equipment models, transfer test scored |
+| IEEE manuscript contains verified results | ✅ (source) | `paper/main.tex` + 8 paper-vs-artefact tests; **no PDF** (B-003) |
+| Tests and reproducibility checks pass | ✅ | 41 tests green; full pipeline re-run reproduced identical metrics |
+| Documentation complete | ✅ | README, ARCHITECTURE, PLAN, PROGRESS, DECISIONS (13), EXPERIMENT_LOG, BLOCKERS |
+
+## Remaining optional work (not blockers)
+
+1. Compile `paper/main.tex` once a TeX distribution exists (B-003), then record page count and fix
+   any float placement.
+2. Repeat the evaluation over several building-disjoint splits to replace the single-split estimate
+   with a distribution.
+3. Add drift detection and a rolling threshold recalibration before any pilot deployment.
 
 ## Changelog
 
@@ -94,3 +106,20 @@ Held-out test (30 unseen buildings, 243,684 rows, 5,454 anomalies) — opened on
   found and fixed mid-flight: (a) missing readings are never labelled → observed-only training
   (D-011); (b) a cross-building peer feature broke train/serve consistency by 57% → removed
   (D-012). A TPE study was invalidated by seeded-RNG replay and replaced by a 6-candidate grid.
+- 2026-11-09 — M6/M7 complete: FastAPI service (`/health`, `/model`, `/score`, `/batch`, `/simulate`,
+  `/dashboard-data`) with a single scoring path shared by training and serving (`src/inference/service.py`),
+  plus a dependency-free canvas dashboard served from `backend/app/static/index.html`. 13 API tests.
+- 2026-11-09 — M8 complete: four geothermal auxiliary-equipment models (separator, feed pump, bearing,
+  compressor) generate SIMULATED hourly signals with injected, labelled faults; the frozen model scores
+  them through the same inference path. Result: 0.954 ROC-AUC on the separator signal but **0 of 252
+  fault hours flagged** at the plant-calibrated threshold — a negative transfer result, reported as such.
+- 2026-11-09 — M9 complete (source only): `paper/main.tex`, IEEE conference format, 10 sections,
+  8 bibliography entries, 4 figures. `tests/test_paper_numbers.py` (8 tests) fails if any headline
+  number drifts from `results/metrics/*.json`. No PDF: no LaTeX distribution here (B-003).
+- 2026-11-09 — M10 complete: `scripts/run_all.py` runs 17 stages in dependency order and writes
+  `results/metrics/pipeline_run.json`. A full re-run from `--from holdout` reproduced the held-out
+  metrics exactly (ROC-AUC 0.9524, PR-AUC 0.8342, Brier 0.00613, threshold 0.1283, 441/536 events),
+  confirming the training path is deterministic given the pinned seeds. 41 tests green.
+- 2026-11-09 — Integrity fix: `results/metrics/optuna_xgb_best.json` renamed to `tuning_best.json`,
+  because the artefact came from the deterministic grid, not the TPE study (D-013). All references
+  updated; no stale paths remain (`grep -rn optuna_xgb_best` returns nothing).

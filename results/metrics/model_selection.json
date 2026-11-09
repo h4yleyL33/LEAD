@@ -20,8 +20,18 @@
       "threshold": 0.14028447763181184,
       "best_iteration": 1069,
       "model_path": "models\\xgb_primary.json"
+    },
+    {
+      "variant": "weighted",
+      "roc_auc": 0.9519070981108186,
+      "pr_auc": 0.818171233610776,
+      "brier": 0.02338026103889023,
+      "event_recall": 0.9117647058823529,
+      "threshold": 0.6835081803981955,
+      "best_iteration": 555,
+      "model_path": "models\\xgb_weighted.json"
     }
   ],
   "selected": "tuned",
-  "spread_roc_auc": 0.0019026539984501323
+  "spread_roc_auc": 0.004245891681231129
 }

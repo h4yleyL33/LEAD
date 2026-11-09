@@ -50,3 +50,6 @@ paper/*.synctex.gz
 
 # Misc
 *.log
+# Local credential files (never commit; rotate if they were ever pushed)
+dahl_keys.txt
+check_dahl.sh

@@ -1,6 +1,6 @@
 # Data Audit — LEAD1.0-small
 
-Generated: 2026-11-08T22:24:26+00:00
+Generated: 2026-11-09T00:00:20+00:00
 Source: `E:\project\LAB_AI\AIoT\data\raw\lead\lead1.0-small.csv`
 
 ## Volume

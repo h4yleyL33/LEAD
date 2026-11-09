@@ -1,0 +1,55 @@
+{
+  "generated": "2026-11-09T11:04:16",
+  "total_seconds": 79.9,
+  "python": "3.14.9 (main, Oct 21 2026, 17:48:58) [MSC v.1944 64 bit (AMD64)]",
+  "fast": false,
+  "stages": [
+    {
+      "stage": "holdout",
+      "status": "ok",
+      "seconds": 35.4,
+      "returncode": 0
+    },
+    {
+      "stage": "compare",
+      "status": "ok",
+      "seconds": 0.8,
+      "returncode": 0
+    },
+    {
+      "stage": "shap",
+      "status": "ok",
+      "seconds": 26.1,
+      "returncode": 0
+    },
+    {
+      "stage": "simulate",
+      "status": "ok",
+      "seconds": 0.8,
+      "returncode": 0
+    },
+    {
+      "stage": "simulate_score",
+      "status": "ok",
+      "seconds": 7.2,
+      "returncode": 0
+    },
+    {
+      "stage": "paper",
+      "status": "ok",
+      "seconds": 0.2,
+      "returncode": 0
+    },
+    {
+      "stage": "tests",
+      "status": "ok",
+      "seconds": 9.5,
+      "returncode": 0
+    }
+  ],
+  "counts": {
+    "ok": 7,
+    "failed": 0,
+    "blocked": 0
+  }
+}

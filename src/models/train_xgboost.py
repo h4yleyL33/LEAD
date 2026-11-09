@@ -63,7 +63,7 @@ def main() -> int:
     ap.add_argument("--tag", default=None, help="suffix for output filenames")
     ap.add_argument("--max-rounds", type=int, default=None)
     ap.add_argument("--params-from", default=None,
-                    help="JSON file with a 'best_params' dict (e.g. results/metrics/optuna_xgb_best.json)")
+                    help="JSON file with a 'best_params' dict (e.g. results/metrics/tuning_best.json)")
     args = ap.parse_args()
 
     tag = args.tag or ("weighted" if args.weighted else "primary")

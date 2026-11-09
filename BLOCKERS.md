@@ -54,3 +54,31 @@ parameters, explicitly labelled SIMULATED. The manuscript describes the geotherm
 **User action to lift (optional)**
 Provide a de-identified SCADA export (timestamp, tag, value, unit, equipment id) with written
 permission to use it. Until then, no real-plant claim will be made.
+
+---
+
+## B-003 — No LaTeX distribution, so the manuscript PDF cannot be compiled here
+
+**Status:** OPEN (blocks the PDF artefact only; the source is complete and validated)
+**Opened:** 2026-11-09
+
+**What is blocked**
+`paper/main.pdf`. `pdflatex`, `latexmk`, `tectonic` and `pandoc` are all absent from this
+environment, and `IEEEtran.cls` is not installed.
+
+**What was done instead**
+1. `paper/main.tex` written in IEEE conference format with the full content.
+2. `scripts/build_paper.py` copies the referenced figures from `results/figures/` and validates the
+   source: every `\cite` key defined, every `\ref` labelled, every figure file present, braces and
+   environments balanced.
+3. `tests/test_paper_numbers.py` (8 tests) verifies that every headline number in the manuscript
+   equals the value in `results/metrics/*.json`, so the text cannot drift from the artefacts.
+4. `paper/README.md` documents the build and the Overleaf route.
+
+**Honest limitation**
+The source has never been compiled, so page count, float placement and any LaTeX typo are unverified.
+It must not be described as camera-ready until it compiles cleanly.
+
+**User action to lift (optional)**
+Install MiKTeX or TeX Live, then run `python scripts/build_paper.py`. Or upload `paper/main.tex` plus
+`paper/figures/` to Overleaf (the `IEEEtran` class is preinstalled there).

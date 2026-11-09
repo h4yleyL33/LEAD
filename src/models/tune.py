@@ -167,7 +167,7 @@ def main() -> int:
             "subsample_fraction": SUBSAMPLE_FRACTION,
             "max_rounds": MAX_ROUNDS,
         }
-        out = METRICS_DIR / "optuna_xgb_best.json"
+        out = METRICS_DIR / "tuning_best.json"
         out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"\nbest candidate {best['candidate']} -> {out}")
         return 0
@@ -214,7 +214,7 @@ def main() -> int:
             for t in done
         ],
     }
-    out = METRICS_DIR / "optuna_xgb_best.json"
+    out = METRICS_DIR / "tuning_best.json"
     out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"\nwrote {out}")
     return 0

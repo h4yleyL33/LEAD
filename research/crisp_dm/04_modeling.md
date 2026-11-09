@@ -7,7 +7,7 @@
 python -m src.models.baselines                        # prior / logistic / isolation forest
 python -m src.models.tune --grid                      # 6-candidate deterministic search
 python -m src.models.train_xgboost                    # default hyper-parameters
-python -m src.models.train_xgboost --params-from results/metrics/optuna_xgb_best.json --tag tuned
+python -m src.models.train_xgboost --params-from results/metrics/tuning_best.json --tag tuned
 python -m src.models.train_xgboost --weighted         # imbalance ablation
 python -m src.models.select_final                     # freeze models/xgb_final.json
 python -m src.evaluation.compare                      # one table for the paper
@@ -139,7 +139,7 @@ Gain-based importance on the full model agrees: `f_dev_rel_720` (12.7%), `f_abs_
 | `models/xgb_final.json` | frozen selected model (734 trees) |
 | `models/xgb_primary.json`, `xgb_tuned.json`, `xgb_weighted.json` | compared variants |
 | `results/metrics/xgb_{tag}_val.json` | validation metrics + full parameter record + environment |
-| `results/metrics/optuna_xgb_best.json` | grid search results |
+| `results/metrics/tuning_best.json` | grid search results |
 | `results/metrics/ablation_families_only.json` | family-only ablation |
 | `results/metrics/model_selection.json` | selection table + rule |
 | `results/tables/feature_importance_{tag}.csv` | gain importance |

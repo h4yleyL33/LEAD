@@ -125,3 +125,20 @@ history. `build_feature_frame(..., include_peer=True)` retains it for reproducin
 **Consequences:** (+) Exact train/serve agreement (verified to 1e-6) and a deployment that needs no
 cross-building infrastructure. (−) The family-only measurement (ROC-AUC 0.7798) is recorded but
 unused; removing it did not hurt — validation ROC-AUC 0.9539 → 0.9543, PR-AUC 0.8200 → 0.8239.
+
+## D-013 — Deterministic six-candidate grid instead of the Optuna TPE study
+**Date:** 2026-11-09
+**Context:** `src/models/tune.py` implements a resumable Optuna TPE study
+(`experiments/optuna_xgb.db`), but TPE with a few hundred trials is itself a random process: two runs
+with the same seed can land on different "best" candidates when the objective differences are within
+noise. The measured spread across all six candidates was 0.0026 PR-AUC — below the fold-to-fold
+variation. Searching harder would have bought a decimal, not a better model, while making the headline
+numbers depend on sampler luck.
+**Decision:** Report the deterministic grid (`--grid`, 6 hand-chosen candidates × 2 grouped folds ×
+20% row subsample) as the tuned configuration. The Optuna study stays in the code for anyone who wants
+to search further. The artefact is `results/metrics/tuning_best.json`, whose `"search"` field states
+which method produced it — the file was previously misnamed `optuna_xgb_best.json` and was renamed so
+the filename cannot imply a search that did not run.
+**Consequences:** (+) Tuning is reproducible bit-for-bit and cheap (~6 min). (+) The paper can say
+honestly that hyper-parameters are not the lever. (−) The chosen point is not the global optimum of the
+space, and no claim of optimality is made.

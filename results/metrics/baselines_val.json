@@ -88,7 +88,7 @@
       "false_alarms_per_building_day": 0.03415525114155251,
       "model": "logistic",
       "fbeta_optimal": 0.5704775911448254,
-      "fit_seconds": 15.9
+      "fit_seconds": 18.2
     },
     "iforest": {
       "roc_auc": 0.8058353080280439,
@@ -112,7 +112,7 @@
       "false_alarms_per_building_day": 0.11990867579908676,
       "model": "iforest",
       "fbeta_optimal": 0.463267450927213,
-      "fit_seconds": 8.7
+      "fit_seconds": 9.8
     }
   }
 }

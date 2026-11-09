@@ -22,7 +22,7 @@
   "variant": "tuned",
   "split_evaluated": "val",
   "best_iteration": 734,
-  "fit_seconds": 172.5,
+  "fit_seconds": 357.7,
   "params": {
     "objective": "binary:logistic",
     "eval_metric": "aucpr",

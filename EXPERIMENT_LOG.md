@@ -53,7 +53,7 @@ Metrics are copied from files under `results/metrics/` — never typed from memo
 - **Split / seed:** 2 grouped folds (28 buildings each), 20% row subsample; seed 42.
 - **Config:** 6 explicit candidates, 250 rounds, early stopping 25, metric = fold-mean PR-AUC.
 - **Metrics:** candidate PR-AUC 0.7732–0.7758 (spread 0.3% relative). Selected candidate 2 (depth 8, lr 0.03, λ 5).
-- **Artifacts:** `results/metrics/optuna_xgb_best.json`, `experiments/optuna_xgb_DISCARDED_replay.db`
+- **Artifacts:** `results/metrics/tuning_best.json`, `experiments/optuna_xgb_DISCARDED_replay.db`
 - **Type:** selection
 - **Notes:** the TPE study was stopped after 11 trials (~100 s each) and is **invalid**: resuming a persisted study restarts TPE's seeded random startup phase, so trials 5–7 exactly replayed the parameter sets of trials 0–2. The DB is kept as evidence, not used. Fix recorded in `src/models/tune.py` (`--fresh` default, explicit warning on resume).
 
@@ -83,6 +83,20 @@ Metrics are copied from files under `results/metrics/` — never typed from memo
 ---
 
 <!-- Template for new entries:
+
+## E-006 — End-to-end reproducibility re-run
+
+- **Date:** 2026-11-09
+- **Command:** `python scripts/run_all.py --from holdout --keep-going`
+- **Purpose:** Verify that the pipeline regenerates the reported numbers from the committed code, not just that the artefacts exist.
+- **Split / seed:** unchanged (train 140 / val 30 / test 30 buildings; seed 42).
+- **Config:** identical to E-005; the models were retrained from scratch earlier in the same session (`--fast` skips only the tuning grid and the weighted ablation).
+- **Metrics (test):** ROC-AUC 0.9524, PR-AUC 0.8342, Brier 0.00613, ECE 0.0005, recall@FPR1% 0.8089, precision/recall 0.7987/0.7888 at threshold 0.1283, event recall 0.8228 (441/536), 0.056 false alarms per building-day — **identical to E-005 at the reported precision**.
+- **Stage timings:** holdout 35.4 s, compare 0.8 s, SHAP 26.1 s, simulation 0.8 s, transfer test 7.2 s, paper validation 0.2 s, tests 9.5 s.
+- **Artifacts:** `results/metrics/pipeline_run.json`, all of `results/` regenerated, `paper/figures/` refreshed.
+- **Type:** diagnostic
+
+---
 
 ## E-NNN — <title>
 
