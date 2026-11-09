@@ -229,6 +229,16 @@ function render(){
   ctx.fillStyle="#E05C5C";
   pts.forEach((p,i)=>{ if(p.y===1 && p.v!=null){ ctx.beginPath(); ctx.arc(X(i),Y(p.v),2.6,0,7); ctx.fill(); }});
 
+  // x-axis: date ticks (a monitoring chart without time labels is unreadable)
+  const tick = Math.max(1, Math.floor(pts.length/5));
+  ctx.font="10px sans-serif";
+  for(let i=0;i<pts.length;i+=tick){
+    const x = X(i);
+    ctx.strokeStyle="#243049"; ctx.beginPath();
+    ctx.moveTo(x, H-pad.b); ctx.lineTo(x, H-pad.b+4); ctx.stroke();
+    ctx.fillStyle="#8fa0bf"; ctx.fillText(pts[i].t.slice(5,10), x-14, H-pad.b+16);
+  }
+
   // ---- bottom chart: score
   const sc = document.getElementById("scores");
   sc.width = W*dpr; sc.height = sc.height; sc.width = W*dpr; sc.height = 120*dpr;
