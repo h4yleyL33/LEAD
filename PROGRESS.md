@@ -123,3 +123,11 @@ Held-out test (30 unseen buildings, 243,684 rows, 5,454 anomalies) — opened on
 - 2026-11-09 — Integrity fix: `results/metrics/optuna_xgb_best.json` renamed to `tuning_best.json`,
   because the artefact came from the deterministic grid, not the TPE study (D-013). All references
   updated; no stale paths remain (`grep -rn optuna_xgb_best` returns nothing).
+- 2026-11-09 — Dashboard fix: the telemetry chart had no x-axis reference; five MM-DD ticks are now
+  drawn from the timestamps the API returns (verified in a browser: 01-01, 02-20, 06-22, 08-19, 09-29).
+- 2026-11-09 — `src/models/tune.py` fix: a locked Optuna store no longer kills the run. Two concurrent
+  tuning processes collided on `experiments/optuna_xgb.db` and the second died with
+  `PermissionError [WinError 32]`; it now falls back to a timestamped database.
+- 2026-11-09 — Security note: `dahl_keys.txt` (plaintext API bearer tokens) and `check_dahl.sh` were
+  found untracked in the project root. Both are now in `.gitignore`; they were never committed and were
+  not executed. The tokens should be rotated if that directory was ever shared or pushed.
