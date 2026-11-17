@@ -131,3 +131,65 @@ Held-out test (30 unseen buildings, 243,684 rows, 5,454 anomalies) — opened on
 - 2026-11-09 — Security note: `dahl_keys.txt` (plaintext API bearer tokens) and `check_dahl.sh` were
   found untracked in the project root. Both are now in `.gitignore`; they were never committed and were
   not executed. The tokens should be rotated if that directory was ever shared or pushed.
+
+- 2026-11-10 — Three deliverables finished and verified end-to-end on Windows.
+  **Model:** `models/xgb_final.json` (8,347,667 bytes; 810 rounds serialised, `best_iteration` 734 used
+  for scoring, 133,252 nodes) with feature order, threshold 0.1283 and metrics that all come from the
+  same experiment. `scripts/setup_web.ps1 -Deliverables model` rebuilds it from a clean checkout;
+  `-Check` re-verifies it read-only (34 features, val ROC-AUC 0.9562, test ROC-AUC 0.9524).
+  **Web:** `scripts/setup_web.ps1` (the only command that trains) then
+  `powershell -ExecutionPolicy Bypass -File scripts/start_web.ps1` (loads the frozen model, never
+  trains) plus `scripts/smoke_web.ps1`. Verified: `/health` and `/model` report `xgboost_final`, and
+  `/simulate` plus one scoring path return real probabilities; the `SIMULATED` label is present in the
+  UI and in every payload. The missing-artefact path was exercised by moving the model aside: the
+  script names `models/xgb_final.json` and the rebuild command and exits without binding a port, and
+  `setup_web.ps1 -Check` exits 1 with the same message. Server restarted cleanly and the smoke test was
+  re-run after the restart.
+  **Paper:** TinyTeX is now installed in the user profile, so `python scripts/build_paper.py` compiles
+  `paper/main.pdf` locally — 6 pages, 370,468 bytes, IEEEtran conference, two-column, 0 undefined
+  references and 0 undefined citations, 1 residual Overfull hbox of 0.97 pt. Four overfull boxes were
+  fixed (`tab:features`, `tab:val`, `tab:weight`, `tab:sim` at `\footnotesize` with `\tabcolsep` 4 pt;
+  `\allowbreak` inside the API-path paragraph). `tests/test_paper_numbers.py`: 8 passed. B-003 is closed;
+  the geothermal transfer result is unchanged, including the negative one, and the synthetic-data caveat
+  appears in the paper and in the `/model` payload.
+
+### Verification checkpoint — 2026-11-10 (Windows, one machine)
+
+No `AGENTS.md` exists in this repo (checked); the governing documents are `MASTER_PROMPT.md`,
+`README.md`, `PROGRESS.md`, `BLOCKERS.md` and `docs/`.
+
+Commands that were run from a clean shell in `E:\project\LAB_AI\AIoT`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_web.ps1            # setup: venv, data, features, frozen model, evaluation, simulation
+powershell -ExecutionPolicy Bypass -File scripts/setup_web.ps1 -Check      # read-only re-verification
+powershell -ExecutionPolicy Bypass -File scripts/start_web.ps1             # serve on http://127.0.0.1:8000 (loads the frozen model)
+powershell -ExecutionPolicy Bypass -File scripts/smoke_web.ps1             # end-to-end check
+```
+
+| Deliverable | Path | Verified size / result |
+| --- | --- | --- |
+| Frozen model | `models/xgb_final.json` | 8,347,667 bytes; 810 rounds stored, `best_iteration` 734; threshold 0.128280; 34 features |
+| Manuscript PDF | `paper/main.pdf` | 6 pages, 370,468 bytes, IEEEtran conference, two-column, 0 undefined refs/cites |
+| Dashboard | `http://127.0.0.1:8000/` | 14,665-char HTML containing the `SIMULATED` label |
+
+- **Smoke test before restart:** `ALL CHECKS PASSED (7/7)` — `/health` `model=xgboost_final
+  threshold=0.128280 n_features=34`, `/model` `selected_from=tuned val_roc_auc=0.9562` + caveat,
+  `/simulate` `points=300 distinct_scores=182`, `/score` `building_id=32 score=0.001309 alarm=NORMAL`.
+- **Restart:** `start_web.ps1 -Stop` exits 0 and `/health` stops answering; `start_web.ps1` exits 0,
+  `/health` and `/model` again report `xgboost_final` with threshold 0.128280.
+- **Smoke test after restart:** `ALL CHECKS PASSED (7/7)`, identical payload numbers to the run before.
+- **Tests:** `python -m pytest -rs -q` → **41 passed, 0 failed, 0 skipped, 1 warning** (4.8–5.8 s).
+  The two skip guards that exist (`tests/test_inference.py` needs the frozen model,
+  `tests/test_paper_numbers.py` needs the manuscript) did **not** trigger, because both artefacts are
+  present — no test is silently skipped for a missing artefact.
+- **Missing-artefact path:** with `models/xgb_final.json` moved aside, `start_web.ps1` names the file
+  and the rebuild command and never binds the port, and `setup_web.ps1 -Check` exits 1 with the same
+  message; the model was restored afterwards and the checks above were re-run.
+
+- **Dashboard in a real browser (2026-11-10):** opened `http://127.0.0.1:8000/` in Chrome; the visible page
+  shows the model line `xgboost_final · 34 features · threshold 0.128 · held-out ROC-AUC 0.952`, the
+  `SIMULATED` data notice, and the held-out metrics. Selecting a scenario in the equipment dropdown
+  (`cooling-water pump` → `turbine bearing`) fired `GET /simulate?equipment=bearing` (89 ms) and rendered
+  the panel `Geothermal auxiliary equipment — SIMULATED / 72 injected fault hours · 0 flagged at the
+  building threshold 0.128 (SIMULATED)` with the synthetic-data caveat and the scored reading table.

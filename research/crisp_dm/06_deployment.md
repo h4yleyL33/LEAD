@@ -111,7 +111,7 @@ This is the honest headline of the simulation, and it is not flattering:
 | Property | Value | Source |
 |---|---|---|
 | Scoring latency, single building history | < 1 s (2,160–8,784 rows, feature build included) | measured during API tests |
-| Model size | 734 trees, ~1.4 MB JSON | `models/xgb_final.json` |
+| Model size | 810 boosting rounds serialised (the early-stopped 734 are used for scoring), 8.0 MB JSON / 133,252 nodes | `models/xgb_final.json` |
 | Cold start | ~6 s (parquet index + model load) | startup log |
 | Test suite | 33 tests (20 pipeline + 13 API) | `pytest backend/tests tests -q` |
 

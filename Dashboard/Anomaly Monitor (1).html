@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Anomaly Monitor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f6;--surface:#fff;--text:#171a1c;--muted:#6b7280;--line:#e5e8e6;--primary:#0f8a5f;--primary-soft:#e3f4ec;--blue:#1d5fbf;--sky:#38a3e8;color-scheme:light;--ok:#16a34a;--ok-bg:#e7f6ec;--warn:#d97706;--warn-bg:#fdf1de;--bad:#dc2626;--bad-bg:#fce8e8;--info-bg:#e8f0fc;
+--s1:4px;--s2:8px;--s3:16px;--s4:24px;--s5:32px;--s6:48px;--r:20px;--font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 var(--font)}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100%}
+aside{background:var(--surface);border-right:1px solid var(--line);padding:var(--s4) var(--s3);position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;font-weight:700;font-size:16px;margin:0 var(--s2) var(--s5)}
+.brand small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+nav a{display:block;padding:10px 14px;border-radius:99px;color:var(--muted);text-decoration:none;font-weight:500;margin-bottom:2px}
+nav a:hover{background:var(--bg);color:var(--text)}nav a.on{background:var(--primary-soft);color:var(--primary);font-weight:600}
+main{padding:var(--s5) var(--s6);max-width:1240px;width:100%}
+h1{font-size:32px;font-weight:800;line-height:1.2;margin:0 0 var(--s1);letter-spacing:-.02em}h2{font-size:17px;margin:0 0 var(--s3)}
+.sub{color:var(--muted);margin:0 0 var(--s5)}
+.panel{background:var(--surface);border-radius:var(--r);padding:var(--s4);margin-bottom:var(--s4);border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);margin-bottom:var(--s4);background:var(--surface);border-radius:var(--r);border:1px solid var(--line)}
+.stat{padding:var(--s4)}.stat+.stat{border-left:1px solid var(--line)}
+.stat b{display:block;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.2}.stat span{color:var(--muted);font-size:13px}
+.row{display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;margin-bottom:var(--s3)}.row.sp{justify-content:space-between}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 14px;border-radius:99px;font:500 13px var(--font);cursor:pointer}
+.chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+input,select,button{font:14px var(--font);color:var(--text)}
+input[type=text],input[type=number],select{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:9px 16px;min-width:150px}
+.btn{background:var(--primary);color:#fff;border:0;border-radius:99px;padding:10px 20px;font-weight:600;cursor:pointer}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--line)}
+.chart{position:relative}.chart svg{width:100%;height:auto;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--text);color:var(--bg);padding:8px 12px;border-radius:10px;font-size:12px;line-height:1.5;display:none;white-space:nowrap;z-index:5}
+.legend{display:flex;gap:var(--s3);font-size:13px;color:var(--muted);flex-wrap:wrap}.legend i{display:inline-block;width:10px;height:10px;border-radius:99px;margin-right:6px}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s3)}
+.sum div{padding:var(--s3) 0;border-top:1px solid var(--line)}.sum b{font-size:14px}.sum p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;padding:12px 14px;border-bottom:1px solid var(--line)}
+td{padding:14px;border-bottom:1px solid var(--line)}tbody tr:hover{background:var(--bg)}tr.click{cursor:pointer}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.b-ok{background:var(--ok-bg);color:var(--ok)}.b-warn{background:var(--warn-bg);color:var(--warn)}.b-bad{background:var(--bad-bg);color:var(--bad)}.b-info{background:var(--info-bg);color:var(--blue)}
+.detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--s4)}.detail small{color:var(--muted);display:block;font-size:12px}.detail b{font-size:18px}
+.note{background:var(--info-bg);color:var(--blue);padding:12px 16px;border-radius:10px;font-size:13px;margin-top:var(--s3)}
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:var(--s6) var(--s4);text-align:center;color:var(--muted);cursor:pointer;background:var(--bg)}
+.drop.over{border-color:var(--primary);background:var(--primary-soft)}.drop b{color:var(--text);display:block;font-size:16px;margin-bottom:4px}
+.empty{text-align:center;color:var(--muted);padding:var(--s5) 0}
+label.f{display:block;font-size:13px;color:var(--muted);margin-bottom:var(--s2)}
+.sheet{border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:520px;background:var(--surface)}
+.sheet table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+.sheet th,.sheet td{padding:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:13px;text-transform:none;letter-spacing:0}
+.sheet th{position:sticky;top:0;background:var(--bg);z-index:2;font-weight:600;color:var(--muted);text-align:center;padding:6px 8px;min-width:120px}
+.sheet th.rn,.sheet td.rn{position:sticky;left:0;background:var(--bg);color:var(--muted);text-align:center;min-width:46px;z-index:1;cursor:pointer;font-size:12px}
+.sheet th.rn{z-index:3}.sheet tbody tr:hover{background:none}
+.sheet td.c{height:34px;padding:0 10px;cursor:cell;white-space:nowrap;user-select:none}
+.sheet td.s{background:var(--primary-soft)}.sheet td.a{outline:2px solid var(--primary);outline-offset:-2px}
+.sheet td input{width:100%;height:34px;border:0;outline:2px solid var(--primary);outline-offset:-2px;padding:0 10px;background:var(--surface)}
+.sheet th input,.sheet th select{width:100%;min-width:0;border:1px solid var(--line);border-radius:8px;padding:4px 6px;font-size:12px;margin-top:4px;background:var(--surface)}
+.sheet th input{font-weight:600;text-align:center}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--s4)}.step b{display:block}.step p{margin:var(--s1) 0 0;color:var(--muted);font-size:14px}
+.num,.av{display:inline-flex;align-items:center;justify-content:center;border-radius:99px;background:var(--primary-soft);color:var(--primary);font-weight:700}.num{width:32px;height:32px;margin-bottom:var(--s2)}
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--s4)}.mem{display:flex;gap:var(--s3);align-items:center}.mem p{margin:0;color:var(--muted);font-size:13px}.av{width:56px;height:56px;font-size:18px;flex:none}
+@media(max-width:860px){.app{grid-template-columns:1fr}aside{position:static;height:auto;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);padding:var(--s3)}.brand{margin:0 var(--s3) 0 0}nav{display:flex;overflow-x:auto;gap:2px}nav a{white-space:nowrap;margin:0}main{padding:var(--s4) var(--s3)}.stats{grid-template-columns:1fr 1fr}.stat:nth-child(3){border-left:0}.stat:nth-child(n+3){border-top:1px solid var(--line)}}
+@media print{aside,.noprint{display:none}.app{display:block}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+<div class="brand"><svg width="30" height="30" viewBox="0 0 30 30"><path d="M15 3 3 9l12 6 12-6z" fill="#0f8a5f"/><path d="M3 14l12 6 12-6" fill="none" stroke="#38a3e8" stroke-width="3"/><path d="M3 20l12 6 12-6" fill="none" stroke="#f59e0b" stroke-width="3"/></svg><div>Anomaly Monitor<small>Time-series ops</small></div></div>
+<nav id="nav"></nav>
+</aside>
+<main id="main"></main>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const TEAM=[{n:'Nama Anggota 1',r:'Peran / jobdesk'},{n:'Nama Anggota 2',r:'Peran / jobdesk'},{n:'Nama Anggota 3',r:'Peran / jobdesk'}];
+const PAGES=[['overview','Overview'],['monitoring','Monitoring'],['anomalies','Anomaly Events'],['datasets','Datasets'],['reports','Reports'],['settings','Settings'],['about','About Us']];
+const COL=['#1d5fbf','#38a3e8','#7a8aa8'];
+let S={w:24,t:3,sel:[],range:336,q:'',f:'all',open:null,dsName:'Sampel: Pompa Sentrifugal P-101',q2:100};
+let D,EV=[],REV={},UP=null;
+function sample(){let r=1;const rnd=()=>(r=(r*16807)%2147483647)/2147483647-.5;const n=336,t=[],s={Temperature:[],Vibration:[],Pressure:[]};
+const sp={Temperature:{80:12,200:-14,301:15},Vibration:{120:1.6,250:1.9},Pressure:{60:-1.4,330:1.5}};
+for(let i=0;i<n;i++){t.push(Date.UTC(2026,10,3)+i*36e5);const d=Math.sin(i/24*6.283);
+s.Temperature.push(70+4*d+rnd()*2+(sp.Temperature[i]||0));s.Vibration.push(2.1+.25*d+rnd()*.2+(sp.Vibration[i]||0));s.Pressure.push(5.2+.2*d+rnd()*.15+(sp.Pressure[i]||0))}
+return{t,s,u:{Temperature:'°C',Vibration:'mm/s',Pressure:'bar'},q:100}}
+function detect(){EV=[];const w=S.w;for(const p in D.s){const a=D.s[p];for(let i=w;i<a.length;i++){const x=a.slice(i-w,i),m=x.reduce((u,v)=>u+v,0)/w,sd=Math.sqrt(x.reduce((u,v)=>u+(v-m)**2,0)/w)||1e-6,z=Math.abs(a[i]-m)/sd;
+if(z>=S.t)EV.push({id:p+i,i,p,v:a[i],m,z,st:z>=S.t*1.6?'Anomali':'Warning'})}}
+EV.sort((a,b)=>b.i-a.i)}
+const fd=t=>new Date(t).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZone:'UTC'});
+const f2=v=>(+v).toFixed(2),bd=s=>`<span class="badge ${s=='Anomali'?'b-bad':'b-warn'}">${s}</span>`;
+const rv=e=>REV[e.id]||'Belum direview';
+const rb=e=>`<span class="badge ${REV[e.id]?'b-ok':'b-info'}">${rv(e)}</span>`;
+const st=p=>{const a=D.s[p];return{mn:Math.min(...a),mx:Math.max(...a),av:a.reduce((u,v)=>u+v,0)/a.length}};
+function chart(id,ps,h){const n=D.t.length,from=Math.max(0,n-S.range),W=900,H=h,m={l:46,r:10,t:10,b:26},norm=ps.length>1;
+const idx=[];for(let i=from;i<n;i++)idx.push(i);
+const sv=ps.map(p=>{const a=D.s[p],mn=Math.min(...a),mx=Math.max(...a);return a.map(v=>norm?(v-mn)/(mx-mn||1):v)});
+let all=sv.flatMap(a=>a.slice(from));let lo=Math.min(...all),hi=Math.max(...all);const pd=(hi-lo)*.08||1;lo-=pd;hi+=pd;
+const X=i=>m.l+(i-from)/(n-1-from||1)*(W-m.l-m.r),Y=v=>H-m.b-(v-lo)/(hi-lo)*(H-m.t-m.b);
+let g='';for(let k=0;k<=4;k++){const v=lo+(hi-lo)*k/4,y=Y(v);g+=`<line x1="${m.l}" x2="${W-m.r}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${m.l-8}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)">${norm?Math.round(v*100)+'%':v.toFixed(v>20?0:1)}</text>`}
+for(let k=0;k<=4;k++){const i=from+Math.round((n-1-from)*k/4);g+=`<text x="${X(i)}" y="${H-6}" text-anchor="${k==0?'start':k==4?'end':'middle'}" font-size="11" fill="var(--muted)">${fd(D.t[i]).split(',')[0]}</text>`}
+ps.forEach((p,k)=>{g+=`<path d="${idx.map((i,j)=>(j?'L':'M')+X(i).toFixed(1)+' '+Y(sv[k][i]).toFixed(1)).join('')}" fill="none" stroke="${COL[k%3]}" stroke-width="2" stroke-linejoin="round"/>`});
+EV.forEach(e=>{const k=ps.indexOf(e.p);if(k>=0&&e.i>=from)g+=`<circle cx="${X(e.i)}" cy="${Y(sv[k][e.i])}" r="5" fill="var(--bad)" stroke="var(--surface)" stroke-width="2"/>`});
+const el=$('#'+id);el.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${g}<line id="${id}L" y1="${m.t}" y2="${H-m.b}" stroke="var(--muted)" stroke-dasharray="3" style="display:none"/></svg><div class="tip"></div>`;
+const svg=el.querySelector('svg'),tip=el.querySelector('.tip'),ln=svg.querySelector('line:last-child');
+svg.onmousemove=ev=>{const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*W;let i=Math.round(from+(px-m.l)/(W-m.l-m.r)*(n-1-from));i=Math.max(from,Math.min(n-1,i));
+ln.setAttribute('x1',X(i));ln.setAttribute('x2',X(i));ln.style.display='';const hit=EV.filter(e=>e.i==i&&ps.includes(e.p)).length;
+tip.innerHTML=`<b>${fd(D.t[i])}</b><br>`+ps.map(p=>`${p}: ${f2(D.s[p][i])} ${D.u[p]||''}`).join('<br>')+(hit?'<br>⚠ Anomali terdeteksi':'');
+tip.style.display='block';const left=(X(i)/W)*r.width;tip.style.left=Math.min(left+12,r.width-170)+'px';tip.style.top='10px'};
+svg.onmouseleave=()=>{tip.style.display='none';ln.style.display='none'}}
+const legend=ps=>`<div class="legend">${ps.map((p,k)=>`<span><i style="background:${COL[k%3]}"></i>${p}${D.u[p]?' ('+D.u[p]+')':''}</span>`).join('')}<span><i style="background:var(--bad)"></i>Anomali</span></div>`;
+function evRows(list,click){return list.map(e=>`<tr class="${click?'click':''}" ${click?`onclick="S.open='${e.id}';go()"`:''}><td>${fd(D.t[e.i])}</td><td>${e.p}</td><td class="n">${f2(e.v)} ${D.u[e.p]||''}</td><td class="n">${f2(e.z)}</td><td>${bd(e.st)}</td>${click?`<td>${rb(e)}</td>`:''}</tr>`).join('')}
+function head(t,s){return`<h1>${t}</h1><p class="sub">${s}</p>`}
+const V={
+overview(){const ps=Object.keys(D.s),an=EV.filter(e=>e.st=='Anomali').length;
+return head('Overview',`Ringkasan kondisi monitoring · ${S.dsName}`)+`<div class="stats"><div class="stat"><b>${D.t.length.toLocaleString('id-ID')}</b><span>Total data records</span></div><div class="stat"><b>${ps.length}</b><span>Jumlah parameter</span></div><div class="stat"><b>${EV.length}</b><span>Anomaly events · ${an} anomali</span></div><div class="stat"><b>${D.q}%</b><span>Kualitas data (nilai terisi)</span></div></div>
+<div class="panel"><div class="row sp"><h2 style="margin:0">Tren parameter</h2>${legend(ps)}</div><div class="chart" id="c1"></div><p class="sub" style="margin:var(--s2) 0 0;font-size:13px">Nilai dinormalisasi 0–100% per parameter agar bisa dibandingkan.</p></div>
+<div class="panel"><div class="row sp"><h2 style="margin:0">Anomaly events terbaru</h2><a class="btn ghost" style="text-decoration:none" href="#anomalies">Lihat semua</a></div><div class="tw">${tbl(EV.slice(0,6),false)}</div></div>`},
+monitoring(){const ps=Object.keys(D.s);if(!S.sel.length)S.sel=[ps[0]];
+return head('Monitoring','Eksplorasi data time-series per parameter')+`<div class="panel"><div class="row sp"><div class="row" style="margin:0">${ps.map(p=>`<button class="chip ${S.sel.includes(p)?'on':''}" onclick="tg('${p}')">${p}</button>`).join('')}</div>
+<select onchange="S.range=+this.value;go()">${[[72,'3 hari terakhir'],[168,'7 hari terakhir'],[336,'Semua data']].map(([v,l])=>`<option value="${v}" ${S.range==v?'selected':''}>${l}</option>`).join('')}</select></div>
+<div class="chart" id="c1"></div><div style="margin-top:var(--s3)">${legend(S.sel)}</div>${S.sel.length>1?'<p class="sub" style="font-size:13px;margin:var(--s2) 0 0">Mode perbandingan: nilai dinormalisasi 0–100%.</p>':''}</div>
+<div class="panel"><h2>Statistik parameter</h2><div class="sum">${S.sel.map(p=>{const s=st(p),c=EV.filter(e=>e.p==p).length;return`<div><b>${p}</b><p>Min ${f2(s.mn)} · Max ${f2(s.mx)} · Rata-rata ${f2(s.av)} ${D.u[p]||''}</p><p>${c} anomaly event</p></div>`}).join('')}</div></div>`},
+anomalies(){let l=EV.filter(e=>(S.f=='all'||(S.f=='rev'?REV[e.id]:!REV[e.id]))&&(e.p+fd(D.t[e.i])).toLowerCase().includes(S.q.toLowerCase()));
+const o=EV.find(e=>e.id==S.open);
+return head('Anomaly Events','Penyimpangan yang terdeteksi dari pola historis')+(o?`<div class="panel"><div class="row sp"><h2 style="margin:0">Detail event</h2><button class="btn ghost" onclick="S.open=null;go()">Tutup</button></div>
+<div class="detail"><div><small>Waktu kejadian</small><b>${fd(D.t[o.i])}</b></div><div><small>Parameter</small><b>${o.p}</b></div><div><small>Observed value</small><b>${f2(o.v)} ${D.u[o.p]||''}</b></div><div><small>Anomaly score</small><b>${f2(o.z)}</b></div><div><small>Review status</small><b>${rb(o)}</b></div></div>
+<p style="margin:var(--s4) 0 var(--s3)">${o.p} bernilai ${f2(o.v)}, ${o.v>o.m?'lebih tinggi':'lebih rendah'} dari rata-rata ${S.w} jam sebelumnya (${f2(o.m)}) dengan simpangan ${f2(o.z)} standar deviasi.</p>
+<button class="btn" onclick="REV['${o.id}']=REV['${o.id}']?null:'Sudah direview';go()">${REV[o.id]?'Tandai belum direview':'Tandai sudah direview'}</button>
+<div class="note">Anomaly score menunjukkan seberapa jauh nilai menyimpang dari pola normal. Skor ini bukan probabilitas kerusakan alat.</div></div>`:'')+
+`<div class="panel"><div class="row"><input type="text" placeholder="Cari parameter atau waktu" value="${S.q}" oninput="S.q=this.value;sr()"><select onchange="S.f=this.value;go()">${[['all','Semua status review'],['un','Belum direview'],['rev','Sudah direview']].map(([v,t])=>`<option value="${v}" ${S.f==v?'selected':''}>${t}</option>`).join('')}</select><span class="sub" style="margin:0;font-size:13px" id="cnt"></span></div><div class="tw" id="tb"></div></div>`},
+datasets(){const u=UP;
+return head('Datasets','Unggah CSV atau mulai dari sheet, edit seperti Excel, lalu analisis')+`<div class="panel"><div class="drop" id="dz" onclick="$('#fi').click()"><b>Seret file CSV ke sini</b>atau klik untuk memilih file</div><input id="fi" type="file" accept=".csv,text/csv" hidden><div class="row" style="margin:var(--s3) 0 0"><button class="btn ghost" onclick="blank()">Sheet kosong</button><button class="btn ghost" onclick="fromD()">Edit dataset aktif</button></div></div>`+
+(u?sheetUI(u):`<div class="panel"><h2>Dataset aktif</h2><p style="margin:0">${esc(S.dsName)} · ${D.t.length} records · ${Object.keys(D.s).join(', ')}</p><div class="note">Data awal adalah data sampel sintetis. Unggah CSV atau buka dataset aktif di sheet untuk mengedit dan menganalisis ulang.</div></div>`)},
+about(){return head('About Us','Bagaimana kami membantu engineer menemukan anomali lebih cepat')+`<div class="panel"><h2>Masalah yang kami selesaikan</h2><p style="margin:0;max-width:720px">Peralatan operasional menghasilkan ribuan titik data sensor setiap hari. Mencari penyimpangan secara manual lambat dan mudah terlewat, apalagi data sering datang sebagai file CSV yang belum rapi. Kami membuat sistem yang merapikan data, menandai nilai yang menyimpang dari pola normal, dan menyajikannya agar mudah direview oleh engineer maupun supervisor.</p></div>
+<div class="panel"><h2>Cara kami menyelesaikannya</h2><div class="steps">${[['Rapikan data','Unggah CSV, edit di sheet seperti Excel, lalu tentukan kolom waktu dan parameter yang dianalisis.'],['Deteksi penyimpangan','Setiap nilai dibandingkan dengan rata-rata dan simpangan baku dari sejumlah record sebelumnya (rolling z-score). Nilai yang melewati threshold menjadi anomaly event.'],['Visualisasikan','Grafik tren dengan penanda anomali, tooltip, dan statistik min, max, rata-rata membantu melihat konteks tiap kejadian.'],['Review oleh manusia','Engineer meninjau setiap event, menandainya sudah direview, dan merangkum hasilnya di Reports.']].map(([t,d],i)=>`<div class="step"><span class="num">${i+1}</span><b>${t}</b><p>${d}</p></div>`).join('')}</div>
+<div class="note">Anomaly score menunjukkan seberapa jauh nilai menyimpang dari pola normal. Skor ini bukan probabilitas kerusakan alat, dan window serta threshold deteksi bisa diatur di Settings.</div></div>
+<div class="panel"><h2>Tim kami</h2><div class="team">${TEAM.map(m=>`<div class="mem"><span class="av">${esc(m.n.split(' ').map(w=>w[0]).slice(0,2).join(''))}</span><div><b>${esc(m.n)}</b><p>${esc(m.r)}</p></div></div>`).join('')}</div></div>`},
+reports(){return head('Reports','Ringkasan hasil monitoring')+`<div class="panel"><div class="row sp"><h2 style="margin:0">${S.dsName}</h2><button class="btn noprint" onclick="print()">Cetak / simpan PDF</button></div><p class="sub">${fd(D.t[0])} – ${fd(D.t[D.t.length-1])} (UTC) · ${D.t.length} records · window ${S.w} · threshold ${S.t}</p>
+<div class="tw"><table><thead><tr><th>Parameter</th><th class="n">Min</th><th class="n">Max</th><th class="n">Rata-rata</th><th class="n">Anomaly events</th></tr></thead><tbody>${Object.keys(D.s).map(p=>{const s=st(p);return`<tr><td>${p}</td><td class="n">${f2(s.mn)}</td><td class="n">${f2(s.mx)}</td><td class="n">${f2(s.av)}</td><td class="n">${EV.filter(e=>e.p==p).length}</td></tr>`}).join('')}</tbody></table></div>
+<div class="note">Anomaly score bukan probabilitas kerusakan alat. Gunakan hasil ini sebagai bahan review engineer.</div></div>`},
+settings(){return head('Settings','Parameter deteksi anomali')+`<div class="panel" style="max-width:560px"><label class="f">Window rolling (jumlah record sebelumnya): <b>${S.w}</b></label><input type="range" min="6" max="72" value="${S.w}" style="width:100%" onchange="S.w=+this.value;detect();go()"><div style="height:var(--s4)"></div>
+<label class="f">Threshold anomaly score (σ): <b>${S.t}</b></label><input type="range" min="2" max="5" step=".5" value="${S.t}" style="width:100%" onchange="S.t=+this.value;detect();go()"><p class="sub" style="font-size:13px;margin:var(--s4) 0 0">Threshold lebih rendah menghasilkan lebih banyak event. Skor ≥ 1,6× threshold ditandai Anomali, sisanya Warning.</p></div>`}};
+function tbl(l,c){return l.length?`<table><thead><tr><th>Waktu</th><th>Parameter</th><th class="n">Observed</th><th class="n">Score</th><th>Status</th>${c?'<th>Review</th>':''}</tr></thead><tbody>${evRows(l,c)}</tbody></table>`:'<div class="empty">Tidak ada event yang cocok.</div>'}
+function sr(){let l=EV.filter(e=>(S.f=='all'||(S.f=='rev'?REV[e.id]:!REV[e.id]))&&(e.p+fd(D.t[e.i])).toLowerCase().includes(S.q.toLowerCase()));$('#tb').innerHTML=tbl(l.slice(0,50),true);$('#cnt').textContent=`${l.length} event${l.length>50?' (50 teratas)':''}`}
+function tg(p){S.sel=S.sel.includes(p)?(S.sel.length>1?S.sel.filter(x=>x!=p):S.sel):[...S.sel,p];go()}
+function go(){const k=(location.hash||'#overview').slice(1),pg=V[k]?k:'overview';
+$('#nav').innerHTML=PAGES.map(([id,l])=>`<a href="#${id}" class="${id==pg?'on':''}">${l}</a>`).join('');
+const fo=document.activeElement&&document.activeElement.type=='text';
+$('#main').innerHTML=V[pg]();
+if(pg=='overview')chart('c1',Object.keys(D.s),300);if(pg=='monitoring')chart('c1',S.sel,400);if(pg=='anomalies'){sr();if(fo){const i=$('input[type=text]');i.focus();i.setSelectionRange(99,99)}}
+if(pg=='datasets')bind()}
+const esc=x=>String(x??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LT=i=>(i>25?String.fromCharCode(64+(i/26|0)):'')+String.fromCharCode(65+i%26);
+let DR=false,ED=false;
+const nz=()=>{const s=UP&&UP.sel;return s?{r1:Math.min(s.r1,s.r2),r2:Math.max(s.r1,s.r2),c1:Math.min(s.c1,s.c2),c2:Math.max(s.c1,s.c2)}:null};
+function sheetUI(u){return`<div class="panel"><div class="row sp"><h2 style="margin:0">${esc(u.name)}</h2><span id="vb"></span></div>
+<div class="row"><button class="btn ghost" onclick="addRow()">+ Baris</button><button class="btn ghost" onclick="delRows()">Hapus baris terpilih</button><button class="btn ghost" onclick="delCols()">Hapus kolom terpilih</button><input type="text" id="fv" placeholder="Nilai isian" style="min-width:120px"><button class="btn ghost" onclick="fillSel($('#fv').value)">Isi sel terpilih</button></div>
+<div class="row"><input type="text" id="cn" placeholder="Nama kolom baru"><input type="text" id="cf" placeholder="Rumus opsional, mis. =B*2+C" style="min-width:220px"><button class="btn" onclick="addCol()">+ Kolom parameter</button><span id="fe" style="color:var(--bad);font-size:13px"></span></div>
+<div class="sheet" id="sheet"></div><div class="row sp" style="margin:var(--s3) 0 0"><span id="sinfo" style="font-size:13px;color:var(--muted)"></span><span style="font-size:12px;color:var(--muted)">Klik/seret = pilih · klik dua kali = edit · Delete = kosongkan · Ctrl+C/V = salin/tempel</span></div></div>
+<div class="panel"><div class="row sp" style="margin:0"><label><input type="checkbox" ${u.only?'checked':''} onchange="UP.only=this.checked;info()"> Analisis hanya baris terpilih</label><button class="btn" id="an" onclick="analyze()">Analyze</button></div></div>`}
+function grid(){const u=UP;$('#sheet').innerHTML=`<table><thead><tr><th class="rn"></th>${u.head.map((h,c)=>`<th><div style="cursor:pointer" onclick="selCol(${c})">${LT(c)}</div><input value="${esc(h)}" onchange="UP.head[${c}]=this.value"><select onchange="role(${c},this.value)">${[['x','Abaikan'],['t','Waktu'],['p','Parameter']].map(([v,l])=>`<option value="${v}" ${u.role[c]==v?'selected':''}>${l}</option>`).join('')}</select></th>`).join('')}</tr></thead><tbody>${u.rows.slice(0,500).map((r,i)=>`<tr><td class="rn" onclick="selRow(${i})">${i+1}</td>${u.head.map((h,c)=>`<td class="c" data-r="${i}" data-c="${c}" ${r[c]===''||isNaN(+r[c])?'':'style="text-align:right"'}>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+function paint(){const s=nz();document.querySelectorAll('#sheet td.c').forEach(t=>{const r=+t.dataset.r,c=+t.dataset.c;t.classList.toggle('s',!!(s&&r>=s.r1&&r<=s.r2&&c>=s.c1&&c<=s.c2));t.classList.toggle('a',!!(UP.sel&&r==UP.sel.r1&&c==UP.sel.c1))});info()}
+function info(){const u=UP,s=nz();let h='Pilih sel dengan klik atau seret.';
+if(s){const v=[];for(let r=s.r1;r<=s.r2;r++)for(let c=s.c1;c<=s.c2;c++){const x=u.rows[r]&&u.rows[r][c];if(x!==''&&x!=null&&!isNaN(+x))v.push(+x)}
+h=`<b>${LT(s.c1)}${s.r1+1}:${LT(s.c2)}${s.r2+1}</b> · ${(s.r2-s.r1+1)*(s.c2-s.c1+1)} sel`;if(v.length){const sm=v.reduce((a,b)=>a+b,0);h+=` · jumlah ${f2(sm)} · rata-rata ${f2(sm/v.length)} · min ${f2(Math.min(...v))} · max ${f2(Math.max(...v))}`}}
+$('#sinfo').innerHTML=h;const pcs=u.role.map((x,i)=>x=='p'?i:-1).filter(i=>i>=0);let bad=0;u.rows.forEach(r=>pcs.forEach(c=>{const x=r[c];if(x===''||x==null||isNaN(+x))bad++}));
+$('#vb').innerHTML=`<span class="badge ${bad?'b-warn':'b-ok'}">${u.rows.length} baris · ${u.head.length} kolom · ${pcs.length} parameter${bad?` · ${bad} sel kosong/non-numerik`:' · valid'}</span>`;
+const n=u.only&&s?s.r2-s.r1+1:u.rows.length,an=$('#an');an.disabled=!(pcs.length&&n>S.w);an.title=an.disabled?(pcs.length?`Butuh lebih dari ${S.w} baris (window deteksi)`:'Tandai minimal satu kolom sebagai Parameter'):''}
+function rf(){grid();paint()}
+function role(c,v){if(v=='t')UP.role=UP.role.map(x=>x=='t'?'x':x);UP.role[c]=v;rf()}
+function selRow(r){UP.sel={r1:r,c1:0,r2:r,c2:UP.head.length-1};paint()}
+function selCol(c){UP.sel={r1:0,c1:c,r2:UP.rows.length-1,c2:c};paint()}
+function addRow(){UP.rows.push(UP.head.map(()=>''));rf();$('#sheet').scrollTop=1e9}
+function delRows(){const s=nz();if(!s)return;UP.rows.splice(s.r1,s.r2-s.r1+1);UP.sel=null;rf()}
+function delCols(){const s=nz();if(!s||UP.head.length<=s.c2-s.c1+1)return;const k=s.c2-s.c1+1;UP.head.splice(s.c1,k);UP.role.splice(s.c1,k);UP.rows.forEach(r=>r.splice(s.c1,k));UP.sel=null;rf()}
+function fillSel(v){const s=nz();if(!s)return;for(let r=s.r1;r<=s.r2;r++)for(let c=s.c1;c<=s.c2;c++)UP.rows[r][c]=v;rf()}
+function calc(f,r){if(!/^[A-Z0-9+\-*/().\s]*$/.test(f))return null;const e=f.replace(/\b[A-Z]{1,2}\b/g,m=>{let i=0;for(const ch of m)i=i*26+ch.charCodeAt(0)-64;return'('+(parseFloat(r[i-1])||0)+')'});try{const v=Function('"use strict";return('+e+')')();return isFinite(v)?String(+v.toFixed(4)):''}catch(x){return''}}
+function addCol(){const u=UP,f=$('#cf').value.trim().replace(/^=/,''),fe=$('#fe');fe.textContent='';
+if(f&&calc(f,u.rows[0]||[])===null){fe.textContent='Rumus hanya boleh berisi huruf kolom, angka, dan + - * / ( )';return}
+u.head.push($('#cn').value.trim()||'Parameter '+LT(u.head.length));u.role.push('p');u.rows.forEach(r=>r.push(f?calc(f,r):''));rf();$('#sheet').scrollLeft=1e9}
+function edit(r,c){const t=$(`#sheet td[data-r="${r}"][data-c="${c}"]`);if(!t)return;ED=true;const i=document.createElement('input');i.value=UP.rows[r][c]??'';t.textContent='';t.appendChild(i);i.focus();i.select();let done=false;
+const ok=v=>{if(done)return;done=true;ED=false;if(v)UP.rows[r][c]=i.value;rf()};i.onblur=()=>ok(true);
+i.onkeydown=e=>{e.stopPropagation();if(e.key=='Enter'){const n=Math.min(r+1,UP.rows.length-1);UP.sel={r1:n,c1:c,r2:n,c2:c};ok(true)}else if(e.key=='Escape')ok(false)}}
+function bind(){const dz=$('#dz'),fi=$('#fi');dz.ondragover=e=>{e.preventDefault();dz.classList.add('over')};dz.ondragleave=()=>dz.classList.remove('over');dz.ondrop=e=>{e.preventDefault();dz.classList.remove('over');rd(e.dataTransfer.files[0])};fi.onchange=()=>rd(fi.files[0]);
+const sh=$('#sheet');if(!sh)return;rf();
+sh.onmousedown=e=>{const t=e.target.closest('td.c');if(!t||ED)return;const r=+t.dataset.r,c=+t.dataset.c;if(e.shiftKey&&UP.sel){UP.sel.r2=r;UP.sel.c2=c}else UP.sel={r1:r,c1:c,r2:r,c2:c};DR=true;paint()};
+sh.onmouseover=e=>{if(!DR)return;const t=e.target.closest('td.c');if(!t)return;UP.sel.r2=+t.dataset.r;UP.sel.c2=+t.dataset.c;paint()};
+sh.ondblclick=e=>{const t=e.target.closest('td.c');if(t)edit(+t.dataset.r,+t.dataset.c)}}
+const live=e=>UP&&location.hash=='#datasets'&&!ED&&!/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)&&$('#sheet');
+addEventListener('mouseup',()=>DR=false);
+addEventListener('keydown',e=>{if(!live(e)||!UP.sel)return;const k=e.key;
+if(k=='Delete'||k=='Backspace'){e.preventDefault();fillSel('')}else if(k=='Enter'||k=='F2'){e.preventDefault();edit(UP.sel.r1,UP.sel.c1)}
+else if(k.startsWith('Arrow')){e.preventDefault();const d={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[k],r=Math.max(0,Math.min(UP.rows.length-1,UP.sel.r2+d[0])),c=Math.max(0,Math.min(UP.head.length-1,UP.sel.c2+d[1]));if(e.shiftKey){UP.sel.r2=r;UP.sel.c2=c}else UP.sel={r1:r,c1:c,r2:r,c2:c};paint()}});
+addEventListener('copy',e=>{if(!live(e)||!UP.sel)return;const s=nz();e.clipboardData.setData('text/plain',UP.rows.slice(s.r1,s.r2+1).map(r=>r.slice(s.c1,s.c2+1).join('\t')).join('\n'));e.preventDefault()});
+addEventListener('paste',e=>{if(!live(e)||!UP.sel)return;const s=nz(),L=e.clipboardData.getData('text/plain').replace(/\n$/,'').split(/\r?\n/).map(l=>l.split('\t'));e.preventDefault();
+L.forEach((l,i)=>{while(UP.rows.length<=s.r1+i)UP.rows.push(UP.head.map(()=>''));l.forEach((v,j)=>{if(s.c1+j<UP.head.length)UP.rows[s.r1+i][s.c1+j]=v})});rf()});
+const iso=t=>new Date(t).toISOString().slice(0,16).replace('T',' ');
+function blank(){UP={name:'Sheet baru',head:['Waktu','Parameter 1','Parameter 2'],role:['t','p','p'],rows:Array.from({length:30},(_,i)=>[iso(Date.UTC(2026,10,17)+i*36e5),'','']),sel:null,only:false};go()}
+function fromD(){const ps=Object.keys(D.s);UP={name:S.dsName,head:['Waktu',...ps],role:['t',...ps.map(()=>'p')],rows:D.t.map((t,i)=>[iso(t),...ps.map(p=>String(+D.s[p][i].toFixed(3)))]),sel:null,only:false};go()}
+function rd(f){if(!f)return;const r=new FileReader();r.onload=()=>{try{const L=r.result.split(/\r?\n/).filter(x=>x.trim()),sep=L[0].includes(';')?';':',',head=L[0].split(sep).map(x=>x.trim()),rows=L.slice(1).map(x=>{const a=x.split(sep).map(y=>y.trim());while(a.length<head.length)a.push('');return a});
+const num=head.map((h,i)=>rows.filter(r=>r[i]!==''&&!isNaN(+r[i])).length>rows.length*.8),tc=num.findIndex(x=>!x);
+UP={name:f.name,head,rows,role:head.map((h,i)=>i==tc?'t':num[i]?'p':'x'),sel:null,only:false};go()}catch(e){alert('File tidak dapat dibaca')}};r.readAsText(f)}
+const pd=v=>{v=String(v).trim();if(/^\d{4}-\d\d-\d\d$/.test(v))v+='T00:00:00';else v=v.replace(' ','T');return Date.parse(/Z$|[+-]\d\d:?\d\d$/.test(v)?v:v+'Z')};
+function analyze(){const u=UP,s=nz();let rows=u.rows;if(u.only&&s)rows=rows.slice(s.r1,s.r2+1);
+const tc=u.role.indexOf('t'),pcs=u.role.map((x,i)=>x=='p'?i:-1).filter(i=>i>=0),t=[],sr={},keys=pcs.map(i=>{let k=u.head[i]||'Param '+LT(i);while(k in sr)k+=' '+LT(i);sr[k]=[];return k});let miss=0;
+rows.forEach((r,k)=>{const d=tc>=0?pd(r[tc]):NaN;t.push(isNaN(d)?Date.UTC(2026,10,1)+k*36e5:d);pcs.forEach((i,j)=>{const v=parseFloat(r[i]),a=sr[keys[j]];if(isNaN(v))miss++;a.push(isNaN(v)?(a.length?a[a.length-1]:0):v)})});
+D={t,s:sr,u:{},q:+(100-miss/(rows.length*pcs.length)*100).toFixed(1)};S.dsName=u.name;S.sel=[];S.range=t.length;REV={};detect();location.hash='#monitoring';go()}
+D=sample();detect();addEventListener('hashchange',go);go();
+</script>
+</body>
+</html>

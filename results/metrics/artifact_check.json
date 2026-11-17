@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "checked_at": "2026-11-11T17:10:35",
+  "model_file": "models/xgb_final.json",
+  "model_sha256": "4a87c6a5ab7d74c9a86328f3953378d9554a9ab1fc34da578b1a3205a9d591fb",
+  "model_tag": "xgboost_final",
+  "n_features": 34,
+  "feature_source": "features.parquet columns == model booster names == xgb_final_val.json['features']",
+  "threshold": 0.1282797332042575,
+  "thresholds_seen": {
+    "validation record": 0.1282797332042575,
+    "selection record": 0.1282797332042575,
+    "scorer": 0.1282797332042575
+  },
+  "validation_metrics": {
+    "roc_auc": 0.9561529897920498,
+    "pr_auc": 0.8198492800752164,
+    "event_recall": 0.8961937716262975
+  },
+  "holdout_metrics": {
+    "roc_auc": 0.9523585417980156,
+    "pr_auc": 0.8342383549075464,
+    "brier": 0.006128719005983796,
+    "event_recall": 0.8227611940298507
+  },
+  "split_sizes": {
+    "train": 140,
+    "validation": 30,
+    "test": 30
+  },
+  "selected_from": "tuned",
+  "selection_rule": "max validation ROC-AUC, tie-break PR-AUC",
+  "problems": []
+}

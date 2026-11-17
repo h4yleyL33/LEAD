@@ -136,7 +136,7 @@ Gain-based importance on the full model agrees: `f_dev_rel_720` (12.7%), `f_abs_
 
 | Path | Contents |
 |---|---|
-| `models/xgb_final.json` | frozen selected model (734 trees) |
+| `models/xgb_final.json` | frozen selected model (810 rounds stored, 734 used after early stopping) |
 | `models/xgb_primary.json`, `xgb_tuned.json`, `xgb_weighted.json` | compared variants |
 | `results/metrics/xgb_{tag}_val.json` | validation metrics + full parameter record + environment |
 | `results/metrics/tuning_best.json` | grid search results |

@@ -15,6 +15,8 @@ data/processed/*
 !data/processed/README.md
 data/synthetic/*
 !data/synthetic/README.md
+# Imported timelines (dashboard CSV import): user data, never committed
+data/datasets/*
 
 # Models & large artifacts
 models/*.json
