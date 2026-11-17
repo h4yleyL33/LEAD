@@ -1,0 +1,106 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,booktabs,etoolbox}
+\usepackage[hidelinks]{hyperref}
+\renewcommand{\abstractname}{Abstrak}
+\renewcommand{\IEEEkeywordsname}{Kata kunci}
+\renewcommand{\refname}{Daftar pustaka}
+\renewcommand{\tablename}{Tabel}
+\patchcmd{\abstract}{---\relax}{\enspace\relax}{}{\PackageError{naskah}{Pemisah abstrak tidak ditemukan}{}}
+\patchcmd{\IEEEkeywords}{---\relax}{\enspace\relax}{}{\PackageError{naskah}{Pemisah kata kunci tidak ditemukan}{}}
+\begin{document}
+\title{Deteksi Anomali Konsumsi Listrik per Jam pada Gedung Komersial dengan XGBoost}
+\author{}
+\maketitle
+\begin{abstract}
+Deteksi anomali konsumsi listrik perlu dievaluasi pada gedung yang belum terlihat saat pelatihan. Studi ini menggunakan subset LEAD1.0-small dan memisahkan 200 gedung menjadi 140 gedung latih, 30 gedung validasi, dan 30 gedung uji. Model XGBoost menggunakan 34 fitur yang dihitung dari data aset yang sama hingga waktu prediksi. Pada 243.684 pembacaan uji, model mencapai ROC-AUC 0,9524 dan PR-AUC 0,8342. Ambang dari data validasi mendeteksi 441 dari 536 episode anomali, dengan median latensi satu jam dan 0,056 episode alarm palsu per gedung per hari. Recall bervariasi antargedung. Hasil berlaku untuk subset dan skema evaluasi yang digunakan.
+\end{abstract}
+\begin{IEEEkeywords}
+deteksi anomali, konsumsi listrik, evaluasi antargedung, XGBoost
+\end{IEEEkeywords}
+
+\section{Pendahuluan}
+Pola konsumsi listrik berubah menurut gedung dan waktu. Pembacaan pada jam yang berdekatan juga berkorelasi. Pembagian acak per baris dapat menempatkan pembacaan yang berdekatan dari gedung yang sama pada data latih dan data uji. Sistem pemantauan dapat digunakan pada gedung baru, sehingga pembagian data mengikuti unit penerapan tersebut. Prinsip ini sejalan dengan kajian evaluasi data yang memiliki struktur temporal dan hierarkis~\cite{roberts}.
+
+Studi ini menguji kemampuan model mendeteksi anomali pada gedung baru dan menilai dampak pemilihan fitur. Evaluasi mencatat hasil per pembacaan, hasil per episode, dan variasi antargedung. Satu alarm dapat cukup untuk menandai gangguan yang berlangsung beberapa jam, sehingga kedua ukuran deteksi diperlukan.
+
+\section{Data dan rancangan evaluasi}
+LEAD1.0-small merupakan subset publik LEAD1.0 dengan anotasi anomali pada pembacaan listrik gedung komersial~\cite{lead}. Artefak audit mencatat 1.749.494 baris dari 200 gedung. Setiap gedung hanya muncul pada satu bagian data. Himpunan uji memuat 243.684 pembacaan yang memiliki pengamatan, termasuk 5.454 pembacaan berlabel anomali. Proporsi anomali pada himpunan ini adalah 2,24\%.
+
+Model dipilih berdasarkan ROC-AUC pada validasi, dengan PR-AUC sebagai pemecah seri. Ambang operasi dipilih pada validasi dengan memaksimalkan $F_2$ dan dibekukan sebelum penilaian uji. Nilai ambang yang disimpan adalah 0,1282797332. Selang kepercayaan ROC-AUC dihitung melalui 300 sampel bootstrap pada tingkat gedung agar kelompok pembacaan dari gedung yang sama tetap utuh.
+
+\section{Metode}
+Untuk waktu $t$, fitur hanya menggunakan pembacaan aset yang sama pada waktu $t$ dan sebelumnya. Statistik acuan bergerak dihitung setelah pergeseran satu langkah. Pembacaan saat ini dengan demikian tidak ikut membentuk acuannya sendiri. Tiap seri ditempatkan pada grid per jam sebelum jendela dihitung. Jam tanpa pengamatan tetap menempati grid dan tidak digunakan sebagai baris latih. Pengujian kebocoran membandingkan hasil perhitungan pada riwayat lengkap dan riwayat yang dipotong. Nilai hingga titik potong harus sama.
+
+Metadata rekayasa fitur mencatat 35 kolom kandidat. Model final memakai 34 fitur karena daftar masukan model tidak memuat \texttt{f\_is\_missing}. Jumlah pada Tabel~\ref{tab:fitur} dihitung dari nama fitur yang tersimpan pada model final dan pemetaan keluarganya.
+
+\begin{table}[!t]
+\centering
+\caption{Jumlah fitur pada model final}
+\label{tab:fitur}
+\begin{tabular}{lr}
+\toprule
+Keluarga & Jumlah \\
+\midrule
+Tingkat pembacaan & 5 \\
+Deviasi dari acuan & 8 \\
+Dinamika & 9 \\
+Volatilitas & 4 \\
+Ketersediaan data & 2 \\
+Kalender & 6 \\
+\midrule
+Total & 34 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+XGBoost~\cite{xgb} digunakan sebagai pengklasifikasi terawasi. Model final berasal dari varian hasil penalaan. Pemeringkatan dievaluasi dengan ROC-AUC dan PR-AUC. PR-AUC dibaca bersama proporsi kelas positif karena kelas anomali jarang~\cite{saito}. Skor Brier dan galat kalibrasi ekspektasian (ECE) melengkapi pengukuran. Satu episode beranotasi dihitung sebagai terdeteksi bila sedikitnya satu pembacaan di dalam episode melewati ambang operasi.
+
+\section{Hasil}
+Model mencapai ROC-AUC 0,9524 dan PR-AUC 0,8342 pada data uji. Pada ambang operasi, model mendeteksi 441 dari 536 episode dengan median latensi satu jam. Tabel II merangkum metrik pembacaan dan episode.
+% Table remains a float; place discussion before it in source to prevent paragraph split.
+\begin{table}[!t]
+\centering
+\caption{Hasil pada 30 gedung uji}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lr}
+\toprule
+Metrik & Nilai \\
+\midrule
+ROC-AUC & 0,9524 \\
+Selang kepercayaan 95\% ROC-AUC & 0,9249 sampai 0,9702 \\
+PR-AUC & 0,8342 \\
+Skor Brier & 0,00613 \\
+ECE, 12 kelompok kuantil & 0,0005 \\
+Recall pada FPR 1\% & 0,8089 \\
+Presisi pada ambang operasi & 0,7987 \\
+Recall pada ambang operasi & 0,7888 \\
+Episode terdeteksi & 441 dari 536 \\
+Recall episode & 0,8228 \\
+Median latensi deteksi & 1 jam \\
+Episode alarm palsu per gedung per hari & 0,0562 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Pembahasan}
+\subsection{Kinerja pada gedung uji}
+Untuk episode pada gedung uji, model mendeteksi 441 dari 536 episode pada ambang operasi. Recall per gedung berkisar 0,02–1,00; Risiko alarm tetap perlu diperiksa per aset. Himpunan uji berasal dari satu pembagian gedung pada subset publik. Kinerja pada pembagian kompetisi dan populasi gedung lain belum diukur.
+
+\subsection{Keterbatasan dan ablasi}
+Pembentuk fitur yang sama dipakai pada evaluasi dan layanan inferensi lokal. Pengujian keterulangan memeriksa kesesuaian pemrosesan pada keduanya. Layanan lokal disiapkan untuk demonstrasi; pemantauan pergeseran distribusi dan evaluasi pada data produksi memerlukan rancangan terpisah.
+
+Pada eksperimen ablasi validasi, keluarga dinamika mencapai ROC-AUC 0,9284 dan PR-AUC 0,7657 ketika digunakan sendiri. Keluarga kalender mencapai ROC-AUC 0,7290 dan PR-AUC 0,0640. Nilai PR-AUC yang rendah pada keluarga kalender memperlihatkan keterbatasan fitur itu dalam memisahkan kelas anomali yang jarang. Varian berbobot kelas meningkatkan recall episode validasi dari sekitar 89,6\% menjadi 91,2\%, dengan kenaikan skor Brier dari sekitar 0,0066 menjadi 0,0234. Model final tetap dipilih dengan aturan ROC-AUC yang ditetapkan sebelum uji.
+
+
+\section{Kesimpulan}
+Pada 30 gedung di luar data latih dan validasi, model mendeteksi 441 dari 536 episode pada ambang operasi dan mencapai PR-AUC 0,8342. Variasi recall antargedung mendukung pemeriksaan kinerja dan risiko alarm per aset sebelum model diterapkan lebih luas.
+
+\begin{thebibliography}{00}
+\bibitem{roberts} D.~R. Roberts \emph{et al.}, \emph{Cross-validation strategies for data with temporal, spatial, hierarchical, or phylogenetic structure}, Ecography, vol.~40, no.~8, 2017.
+\bibitem{lead} M.~Gulati dan P.~Arjunan, \emph{LEAD1.0: A Large-scale Annotated Dataset for Energy Anomaly Detection in Commercial Buildings}, 2022, \url{https://arxiv.org/abs/2203.17256}.
+\bibitem{xgb} T.~Chen dan C.~Guestrin, \emph{XGBoost: A Scalable Tree Boosting System}, ACM SIGKDD, 2016, doi: 10.1145/2939672.2939785.
+\bibitem{saito} T.~Saito dan M.~Rehmsmeier, \emph{The precision-recall plot is more informative than the ROC plot when evaluating binary classifiers on imbalanced datasets}, PLOS ONE, vol.~10, no.~3, 2015.
+\end{thebibliography}
+\end{document}

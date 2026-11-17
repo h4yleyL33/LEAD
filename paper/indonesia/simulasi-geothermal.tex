@@ -1,0 +1,92 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,booktabs,etoolbox}
+\usepackage[hidelinks]{hyperref}
+\renewcommand{\abstractname}{Abstrak}
+\renewcommand{\IEEEkeywordsname}{Kata kunci}
+\renewcommand{\refname}{Daftar pustaka}
+\renewcommand{\tablename}{Tabel}
+\patchcmd{\abstract}{---\relax}{\enspace\relax}{}{\PackageError{naskah}{Pemisah abstrak tidak ditemukan}{}}
+\patchcmd{\IEEEkeywords}{---\relax}{\enspace\relax}{}{\PackageError{naskah}{Pemisah kata kunci tidak ditemukan}{}}
+\begin{document}
+\title{Uji Transfer Ambang Deteksi Anomali pada Simulasi Peralatan Bantu Pembangkit Listrik Tenaga Panas Bumi}
+\author{}
+\maketitle
+\begin{abstract}
+Studi ini menguji ambang deteksi anomali yang dikalibrasi pada konsumsi listrik gedung ketika digunakan pada sinyal peralatan bantu panas bumi. Empat seri sintetis berisi masing-masing 2.160 jam dan satu gangguan yang disisipkan. Model XGBoost dan ambang 0,1282797332 dipertahankan selama evaluasi. Dari 252 jam berlabel gangguan, tidak ada yang terdeteksi. Satu alarm muncul pada jam normal di seri separator. ROC-AUC separator mencapai 0,9536, sedangkan ROC-AUC kompresor sebesar 0,3892. Perbedaan ini menunjukkan bahwa kualitas pengurutan skor dan kinerja ambang operasi perlu dinilai terpisah. Hasil berlaku untuk data simulasi dan konfigurasi yang diuji.
+\end{abstract}
+\begin{IEEEkeywords}
+deteksi anomali, simulasi panas bumi, transfer ambang, pemantauan kondisi
+\end{IEEEkeywords}
+
+\section{Pendahuluan}
+Model pemantauan dapat memberi skor yang mengurutkan jam gangguan di atas jam normal, tetapi tetap menghasilkan alarm yang tidak memadai pada ambang tertentu. Risiko ini muncul ketika model dan ambang digunakan pada aset dengan skala, satuan, atau perilaku yang berbeda. Eksperimen ini memeriksa perilaku tersebut dengan mempertahankan model dan ambang yang diperoleh dari telemetri gedung.
+
+Eksperimen memakai data \textbf{SIMULASI}. Nilai sinyal dan label gangguan berasal dari generator, sehingga waktu kejadian dapat diperiksa dengan tepat. Evaluasi mengukur respons jalur inferensi pada skenario terkontrol. Data pengukuran PLTP Kamojang tidak digunakan.
+
+\section{Sinyal simulasi}
+Generator membuat empat seri per jam selama 90 hari. Setiap seri mewakili satu sinyal dan satu kejadian gangguan. Sinyal yang digunakan adalah daya pompa pendingin, arus kompresor gas nonkondensabel, temperatur bantalan turbin, dan level separator. Artefak berisi 8.640 pengamatan dari empat seri dengan panjang masing-masing 2.160 jam. Label gangguan diperoleh dari interval penyisipan pada generator.
+
+\begin{table}[t]
+\centering
+\caption{Skenario gangguan pada data simulasi}
+\label{tab:skenario}
+\small
+\begin{tabular}{llr}
+\toprule
+Peralatan & Gangguan & Jam \\
+\midrule
+Bantalan & Kenaikan temperatur & 72 \\
+Kompresor & Pengotoran & 120 \\
+Pompa & Kavitasi & 36 \\
+Separator & Pergeseran level & 24 \\
+\midrule
+Total & & 252 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Metode}
+Model XGBoost~\cite{xgb} berasal dari eksperimen konsumsi listrik gedung pada subset publik LEAD1.0~\cite{lead}. Setiap seri simulasi diproses secara terpisah. Waktu dan nilai seri dimasukkan ke pembentuk fitur yang sama dengan jalur inferensi gedung. Kolom disusun sesuai urutan fitur model. Daya, arus, temperatur, dan level masuk sebagai nilai numerik pada jalur yang sama. Perbedaan satuan dan karakter sinyal menjadi bagian dari pergeseran domain yang diuji.
+
+Label gangguan digunakan untuk evaluasi. Model tidak dilatih ulang dan ambang tidak dipilih ulang pada data simulasi. Sebuah alarm tercatat jika skor memenuhi $\hat{p}\geq 0{,}1282797332$. Untuk setiap seri, dihitung ROC-AUC, PR-AUC, jumlah jam gangguan yang terdeteksi, dan jumlah alarm pada jam normal. Rata-rata dihitung dari empat metrik per seri.
+
+\section{Hasil}
+\begin{table}[t]
+\centering
+\caption{Pemeringkatan dan deteksi pada data simulasi}
+\label{tab:hasil}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+Peralatan & ROC-AUC & PR-AUC & Jam terdeteksi \\
+\midrule
+Bantalan & 0,5790 & 0,0943 & 0 dari 72 \\
+Kompresor & 0,3892 & 0,0416 & 0 dari 120 \\
+Pompa & 0,8678 & 0,1415 & 0 dari 36 \\
+Separator & 0,9536 & 0,1101 & 0 dari 24 \\
+\midrule
+Ringkasan & 0,6974 & 0,0969 & 0 dari 252 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Separator dan pompa memiliki ROC-AUC lebih tinggi daripada bantalan dan kompresor pada Tabel~\ref{tab:hasil}. Tidak ada satu pun jam gangguan yang melewati ambang. Separator menghasilkan satu alarm pada jam normal. Ketiga seri lainnya tidak menghasilkan alarm. Jumlah jam gangguan pada Tabel~\ref{tab:skenario} juga perlu diperhatikan ketika membandingkan PR-AUC antarsinyal.
+
+Median skor saat gangguan adalah 0,00063 pada bantalan, 0,00082 pada kompresor, 0,00395 pada pompa, dan 0,00387 pada separator. Seluruh median berada jauh di bawah ambang 0,1282797332. Pada kompresor, median jam normal sebesar 0,00111 lebih tinggi daripada median jam gangguan. Penurunan ambang saja belum menunjukkan bahwa pemeringkatan pada kompresor akan menjadi memadai.
+
+\section{Pembahasan}
+\enlargethispage{2\baselineskip}
+ROC-AUC separator yang tinggi menunjukkan bahwa banyak pasangan jam gangguan dan jam normal memiliki urutan skor yang benar. Jumlah alarm pada ambang tetap mengukur apakah skor mencapai nilai yang memicu tindakan. Kedua hasil dapat muncul bersamaan ketika skor untuk banyak jam gangguan berada di atas jam normal, sementara kedua kelompok berada di bawah ambang.
+
+Generator menyediakan satu kejadian per jenis peralatan. Evaluasi belum mencakup variasi beban lapangan, perubahan kalibrasi sensor, gangguan majemuk, dan kejadian dari beberapa unit fisik. Uji transfer memeriksa konsistensi jalur inferensi pada skenario sintetis. Validasi untuk penerapan nyata memerlukan data serta label aset tujuan dengan pemisahan antara data kalibrasi dan data uji.
+
+\section{Kesimpulan}
+Pada empat seri sintetis, model dan ambang gedung menghasilkan nol deteksi dari 252 jam gangguan dan satu alarm pada jam normal. Pemeringkatan separator dan pompa relatif lebih baik, tetapi ambang yang diuji tidak menghasilkan deteksi gangguan pada keduanya. Uji lanjutan pada aset tujuan perlu mengukur pemeringkatan, kalibrasi, dan alarm secara terpisah.
+
+\begin{thebibliography}{00}
+\bibitem{lead} M.~Gulati dan P.~Arjunan, \emph{LEAD1.0: A Large-scale Annotated Dataset for Energy Anomaly Detection in Commercial Buildings}, 2022, \url{https://arxiv.org/abs/2203.17256}.
+\bibitem{xgb} T.~Chen dan C.~Guestrin, \emph{XGBoost: A Scalable Tree Boosting System}, ACM SIGKDD, 2016, doi: 10.1145/2939672.2939785.
+\end{thebibliography}
+\end{document}

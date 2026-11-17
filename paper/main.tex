@@ -230,7 +230,8 @@ used, because building medians span 57--969\,kWh and a raw magnitude does not tr
 \caption{Feature families (34 features). Windows are 6, 24, 168 and 720 hours with
 \texttt{min\_periods} 3, 12, 24 and 48.}
 \label{tab:features}
-\small
+\footnotesize
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llr}
 \toprule
 Family & Examples & $n$ \\
@@ -276,7 +277,8 @@ features and labels are. The best candidate was selected by validation ROC-AUC a
 \caption{Validation split (30 buildings, 250{,}019 observed rows). Threshold-dependent columns are at
 the $F_2$-optimal threshold for each model.}
 \label{tab:val}
-\small
+\footnotesize
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lcccc}
 \toprule
 Model & ROC-AUC & PR-AUC & Brier & Episode rec. \\
@@ -335,7 +337,8 @@ annotated anomalies.
 \centering
 \caption{Effect of \texttt{scale\_pos\_weight} = 42.4 on the validation split.}
 \label{tab:weight}
-\small
+\footnotesize
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lcccc}
 \toprule
  & ROC-AUC & PR-AUC & Brier & Episode rec. \\
@@ -434,7 +437,7 @@ stated with the figure.
 \subsection{One scoring path}
 
 A FastAPI service exposes the frozen model (\texttt{/model}, \texttt{/metrics}), held-out series
-(\texttt{/buildings}, \texttt{/buildings/\{id\}/series}), single-asset scoring (\texttt{/score}) and
+(\texttt{/buildings} and \texttt{/buildings/\allowbreak\{id\}/\allowbreak series}), single-asset scoring (\texttt{/score}) and
 batch scoring (\texttt{/batch}). The critical property is that serving calls the \emph{same}
 \texttt{build\_feature\_frame} used to construct the training matrix, on the caller's history. A test
 scores a real row through both paths and requires agreement to $10^{-6}$; this is what caught the
@@ -464,7 +467,8 @@ performance claim.
 \centering
 \caption{Transfer to \simnote{} geothermal signals at the frozen building threshold.}
 \label{tab:sim}
-\small
+\footnotesize
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lccr}
 \toprule
 Signal (injected fault) & ROC-AUC & PR-AUC & Fault hours flagged \\
