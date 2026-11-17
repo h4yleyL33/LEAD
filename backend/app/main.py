@@ -42,6 +42,9 @@ from src.utils.config import (  # noqa: E402
     GROUP_COL, METRICS_DIR, SYNTHETIC_DIR, TARGET_COL, TIME_COL, VALUE_COL,
 )
 
+from backend.app import datasets as ds_store  # noqa: E402
+from backend.app.live import get_hub  # noqa: E402
+
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
@@ -60,12 +63,38 @@ class BatchRequest(BaseModel):
                                 description="rows with building_id, timestamp, meter_reading")
 
 
+class LiveReading(BaseModel):
+    building_id: int
+    timestamp: str
+    meter_reading: float | None = None
+
+
+class LiveIngestRequest(BaseModel):
+    records: list[LiveReading] = Field(..., min_length=1)
+
+
+class DatasetCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    csv: str = Field(..., description="raw CSV text")
+
+
+class DatasetScoreRequest(BaseModel):
+    building_id: int | None = Field(
+        None, description="score only this building; omit to score every building in the file"
+    )
+
+
+class DatasetRename(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+
+
 STATE: dict = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     STATE["scorer"] = AnomalyScorer("final")
+    STATE["hub"] = get_hub(STATE["scorer"])
     STATE["test"] = None  # loaded lazily; 240k rows
     yield
     STATE.clear()
@@ -300,6 +329,238 @@ def simulate(equipment: str = Query("pump", pattern="^(pump|compressor|bearing|s
                 "fault": int(y.iloc[i]),
             }
             for i in idx
+        ],
+    }
+
+
+@app.get("/live/status")
+def live_status() -> dict:
+    """What the live ring buffers currently hold (no scoring)."""
+    return STATE["hub"].status()
+
+
+@app.post("/live/ingest")
+def live_ingest(req: LiveIngestRequest) -> dict:
+    """Push real-time readings into the live buffers.
+
+    Readings are appended, not scored here: scoring happens on read (`GET /live/{id}`) so a burst of
+    ingest cannot produce a half-built feature window. A null `meter_reading` is accepted and later
+    reported as OUTAGE.
+    """
+    hub = STATE["hub"]
+    res = hub.ingest([r.model_dump() for r in req.records])
+    return {**res, "buffer": hub.status()}
+
+
+@app.get("/live/buildings")
+def live_buildings() -> dict:
+    return STATE["hub"].status()
+
+
+@app.get("/live/{building_id}")
+def live_snapshot(
+    building_id: int,
+    since: str | None = Query(None, description="ISO timestamp; return only points at/after it"),
+    limit: int = Query(500, ge=1, le=2200),
+) -> dict:
+    """Scored points for one live building, newest last.
+
+    The dashboard polls this with `since` set to the last timestamp it rendered, so each poll
+    transfers only the new hours.
+    """
+    snap = STATE["hub"].snapshot(building_id, since=since, limit=limit)
+    if snap["n_points"] == 0 and snap["latest"] is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"no live readings for building {building_id}; POST /live/ingest first",
+        )
+    return snap
+
+
+@app.post("/live/{building_id}/seed")
+def live_seed(building_id: int) -> dict:
+    """Preload the live buffer for a building from the held-out test split.
+
+    Convenience for a demo: gives the live tail enough history that the 168 h features are defined
+    before the first real reading arrives.
+    """
+    t = _test_frame()
+    d = t[t[GROUP_COL] == building_id]
+    if d.empty:
+        raise HTTPException(status_code=404, detail=f"building {building_id} not in held-out split")
+    hist = d[[GROUP_COL, TIME_COL, VALUE_COL]].copy()
+    n = STATE["hub"].seed(hist)
+    return {"building_id": building_id, "seeded_points": int(n),
+            "buffer": STATE["hub"].status()}
+
+
+# --------------------------------------------------------------------------- imported timelines
+@app.get("/datasets")
+def datasets_list() -> dict:
+    """Imported timeline datasets, newest first."""
+    items = ds_store.list_datasets()
+    return {"n_datasets": len(items), "datasets": items}
+
+
+@app.post("/datasets", status_code=201)
+def datasets_create(req: DatasetCreate) -> dict:
+    """Import a timeline CSV: parse, validate the schema, store it unscored.
+
+    The CSV text is sent in the JSON body rather than as multipart so the dashboard needs no extra
+    dependency; the file itself is persisted under data/datasets/<id>/raw.csv.
+    """
+    import io
+
+    try:
+        df = pd.read_csv(io.StringIO(req.csv))
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"could not parse CSV: {exc}") from exc
+    if df.empty:
+        raise HTTPException(status_code=422, detail="CSV contains a header but no data rows")
+
+    try:
+        canon, report = ds_store.canonicalize(df)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    ds = ds_store.create_dataset(req.name, canon, report)
+    return {"dataset": ds.to_dict(), "import": report}
+
+
+@app.get("/datasets/{dataset_id}")
+def datasets_get(dataset_id: str) -> dict:
+    meta = ds_store.get_meta(dataset_id)
+    if meta is None:
+        raise HTTPException(status_code=404, detail=f"unknown dataset {dataset_id}")
+    scored = ds_store.read_scored(dataset_id)
+    return {**meta, "is_scored": scored is not None}
+
+
+@app.patch("/datasets/{dataset_id}")
+def datasets_rename(dataset_id: str, req: DatasetRename) -> dict:
+    meta = ds_store.rename_dataset(dataset_id, req.name)
+    if meta is None:
+        raise HTTPException(status_code=404, detail=f"unknown dataset {dataset_id}")
+    return meta
+
+
+@app.delete("/datasets/{dataset_id}")
+def datasets_delete(dataset_id: str) -> dict:
+    if not ds_store.delete_dataset(dataset_id):
+        raise HTTPException(status_code=404, detail=f"unknown dataset {dataset_id}")
+    return {"deleted": dataset_id}
+
+
+@app.post("/datasets/{dataset_id}/score")
+def datasets_score(dataset_id: str, req: DatasetScoreRequest | None = None) -> dict:
+    """Score an imported timeline and cache the result.
+
+    Scoring a long history is CPU work, so the result is written to parquet and served afterwards by
+    `/datasets/{id}/series`; re-scoring only happens when asked.
+    """
+    meta = ds_store.get_meta(dataset_id)
+    if meta is None:
+        raise HTTPException(status_code=404, detail=f"unknown dataset {dataset_id}")
+    raw = ds_store.read_raw(dataset_id)
+    if req is not None and req.building_id is not None:
+        raw = raw[raw[GROUP_COL] == req.building_id]
+        if raw.empty:
+            raise HTTPException(
+                status_code=404, detail=f"building {req.building_id} not in this dataset"
+            )
+
+    scorer: AnomalyScorer = STATE["scorer"]
+    scored = ds_store.score_frame_long(scorer, raw)
+    if scored.empty:
+        raise HTTPException(
+            status_code=422,
+            detail="no row could be scored; each building needs enough consecutive hours of history",
+        )
+    summary = ds_store.summarize_scored(scored, scorer.threshold)
+    ds_store.save_scored(dataset_id, scored, summary)
+    return {
+        "dataset_id": dataset_id,
+        "name": meta["name"],
+        "model": scorer.model_tag,
+        "scored_rows": int(len(scored)),
+        "summary": summary,
+        "series_url": f"/datasets/{dataset_id}/series",
+    }
+
+
+@app.get("/datasets/{dataset_id}/series")
+def datasets_series(
+    dataset_id: str,
+    building_id: int | None = Query(None),
+    limit: int = Query(2000, ge=100, le=20000),
+) -> dict:
+    """Scored points from a previously scored dataset, newest last."""
+    if ds_store.get_meta(dataset_id) is None:
+        raise HTTPException(status_code=404, detail=f"unknown dataset {dataset_id}")
+    scored = ds_store.read_scored(dataset_id)
+    if scored is None:
+        raise HTTPException(
+            status_code=409, detail="dataset not scored yet; POST /datasets/{id}/score first"
+        )
+    d = scored if building_id is None else scored[scored[GROUP_COL] == building_id]
+    if d.empty:
+        raise HTTPException(status_code=404, detail="no rows for the requested building")
+
+    if len(d) > limit:  # even stride keeps isolated spikes visible better than tail slicing
+        import numpy as np
+
+        idx = np.unique(np.linspace(0, len(d) - 1, limit).round().astype(int))
+        d = d.iloc[idx]
+
+    return {
+        "dataset_id": dataset_id,
+        "building_id": building_id,
+        "threshold": float(STATE["scorer"].threshold),
+        "n_rows": int(len(d)),
+        "points": [
+            {
+                "t": r[TIME_COL].strftime("%Y-%m-%dT%H:%M"),
+                "v": None if pd.isna(r[VALUE_COL]) else round(float(r[VALUE_COL]), 3),
+                "score": None if pd.isna(r["score"]) else round(float(r["score"]), 5),
+                "alarm": r["alarm"],
+                "flag": int(r["flag"]),
+                "building_id": int(r[GROUP_COL]),
+            }
+            for r in d.to_dict("records")
+        ],
+    }
+
+
+@app.get("/datasets/{dataset_id}/anomalies")
+def datasets_anomalies(
+    dataset_id: str,
+    limit: int = Query(100, ge=1, le=2000),
+    building_id: int | None = Query(None),
+) -> dict:
+    """Flagged hours only, worst first -- feeds the anomaly table without shipping the whole series."""
+    if ds_store.get_meta(dataset_id) is None:
+        raise HTTPException(status_code=404, detail=f"unknown dataset {dataset_id}")
+    scored = ds_store.read_scored(dataset_id)
+    if scored is None:
+        raise HTTPException(
+            status_code=409, detail="dataset not scored yet; POST /datasets/{id}/score first"
+        )
+    d = scored[scored["alarm"] == "ANOMALY"]
+    if building_id is not None:
+        d = d[d[GROUP_COL] == building_id]
+    d = d.sort_values("score", ascending=False).head(limit)
+    return {
+        "dataset_id": dataset_id,
+        "n_anomaly_total": int((scored["alarm"] == "ANOMALY").sum()),
+        "n_returned": int(len(d)),
+        "events": [
+            {
+                "building_id": int(r[GROUP_COL]),
+                "t": r[TIME_COL].strftime("%Y-%m-%dT%H:%M"),
+                "v": None if pd.isna(r[VALUE_COL]) else round(float(r[VALUE_COL]), 3),
+                "score": round(float(r["score"]), 5),
+            }
+            for r in d.to_dict("records")
         ],
     }
 
