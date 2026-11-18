@@ -21,7 +21,7 @@ End If
 
 base = "http://127.0.0.1:8000"
 cmd  = "powershell -NoProfile -ExecutionPolicy Bypass -File """ & _
-       fso.BuildPath(root, "scripts\start_web.ps1") & """ -Port 8000"
+       fso.BuildPath(root, "scripts\start_web.ps1") & """ -Port 8000 -NoBrowser"
 
 ' 0 = hidden window, False = do not wait.
 rc = shell.Run(cmd, 0, False)
@@ -38,7 +38,7 @@ End If
 ' which is not reliably registered on every host.
 ok = False
 For tries = 1 To 40
-    Set exec = shell.Exec("curl.exe -s -o NUL -w ""%{http_code}"" " & base & "/health")
+    Set exec = shell.Exec("curl.exe --connect-timeout 1 --max-time 2 -s -o NUL -w ""%{http_code}"" " & base & "/health")
     Do While exec.Status = 0
         WScript.Sleep 50
     Loop

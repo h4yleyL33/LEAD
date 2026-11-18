@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Start the local AIoT web service on http://127.0.0.1:8000 using the frozen model.
 
@@ -65,6 +65,16 @@ if ($Stop) {
     return
 }
 
+# Reuse a healthy AIoT service; opening the dashboard must not reset its live buffer.
+try {
+    $health = Invoke-RestMethod -Uri "$Base/health" -TimeoutSec 2
+} catch { $health = $null }
+if ($health -and $health.status -eq 'ok' -and $health.model -eq 'xgboost_final') {
+    Write-Host "web service already up: $Base/"
+    if (-not $NoBrowser) { Start-Process "$Base/" }
+    return
+}
+
 # ---------------------------------------------------------------- artefacts
 $VenvPy = Join-Path $Root '.venv\Scripts\python.exe'
 if (Test-Path $VenvPy) { $Py = $VenvPy } else { $Py = (Get-Command python).Source }
@@ -88,13 +98,6 @@ details:
     & '$Py' scripts/prepare_artifacts.py --list      # stage -> output files
 "@
     exit 1
-}
-
-$existing = Get-ListenerProcess
-if ($existing) {
-    Write-Warning "a web server is already running (pid $($existing.Id)); restarting it"
-    Stop-Process -Id $existing.Id -Force
-    Start-Sleep -Seconds 2
 }
 
 # ---------------------------------------------------------------- start
