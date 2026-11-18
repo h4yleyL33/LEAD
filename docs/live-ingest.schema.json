@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "LiveReading": {
+      "properties": {
+        "building_id": {
+          "title": "Building Id",
+          "type": "integer"
+        },
+        "timestamp": {
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "meter_reading": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Meter Reading"
+        }
+      },
+      "required": [
+        "building_id",
+        "timestamp"
+      ],
+      "title": "LiveReading",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "records": {
+      "items": {
+        "$ref": "#/$defs/LiveReading"
+      },
+      "minItems": 1,
+      "title": "Records",
+      "type": "array"
+    }
+  },
+  "required": [
+    "records"
+  ],
+  "title": "LiveIngestRequest",
+  "type": "object"
+}

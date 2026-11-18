@@ -72,7 +72,7 @@ class LiveHub:
                 bid = int(bid)
                 buf = self._bufs.get(bid)
                 if buf is None:
-                    buf = BuildingBuffer(points=deque(), updated_at=now)
+                    buf = BuildingBuffer(points=deque(maxlen=BUFFER_HOURS), updated_at=now)
                     self._bufs[bid] = buf
                 # A null value is a legitimate reading: it is the OUTAGE case.
                 buf.points.append((ts, float("nan") if pd.isna(val) else float(val)))
@@ -92,7 +92,7 @@ class LiveHub:
         with self._lock:
             for bid, sub in history.groupby(GROUP_COL):
                 buf = self._bufs.setdefault(
-                    int(bid), BuildingBuffer(points=deque(), updated_at=time.time())
+                    int(bid), BuildingBuffer(points=deque(maxlen=BUFFER_HOURS), updated_at=time.time())
                 )
                 for ts, val in zip(sub[TIME_COL], sub[VALUE_COL]):
                     buf.points.append((pd.Timestamp(ts), float("nan") if pd.isna(val) else float(val)))

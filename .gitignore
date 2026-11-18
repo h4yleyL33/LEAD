@@ -55,3 +55,6 @@ paper/*.synctex.gz
 # Local credential files (never commit; rotate if they were ever pushed)
 dahl_keys.txt
 check_dahl.sh
+
+# Local IoT connection settings (tokens remain only in server memory)
+data/integrations/

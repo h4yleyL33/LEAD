@@ -28,7 +28,9 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -43,7 +45,8 @@ from src.utils.config import (  # noqa: E402
 )
 
 from backend.app import datasets as ds_store  # noqa: E402
-from backend.app.live import get_hub  # noqa: E402
+from backend.app.live import get_hub
+from backend.app.external_api import ExternalSource, SourceConfig  # noqa: E402
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -96,8 +99,12 @@ async def lifespan(app: FastAPI):
     STATE["scorer"] = AnomalyScorer("final")
     STATE["hub"] = get_hub(STATE["scorer"])
     STATE["test"] = None  # loaded lazily; 240k rows
-    yield
-    STATE.clear()
+    STATE["source"] = ExternalSource(STATE["hub"], PROJECT_ROOT / "data/integrations/source.json")
+    try:
+        yield
+    finally:
+        STATE["source"].stop()
+        STATE.clear()
 
 
 app = FastAPI(
@@ -110,6 +117,45 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(request: Request, exc: RequestValidationError):
+    if request.url.path.startswith("/connection"):
+        # Validation errors must not echo an auth token or the submitted config.
+        return JSONResponse(status_code=422, content={"detail": "Konfigurasi koneksi tidak valid. Periksa URL, autentikasi, interval, dan pemetaan field."})
+    return await request_validation_exception_handler(request, exc)
+
+
+@app.get("/connection")
+def connection_status() -> dict:
+    return STATE["source"].status()
+
+
+@app.put("/connection")
+def connection_save(config: SourceConfig) -> dict:
+    try:
+        return STATE["source"].save(config)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail="Konfigurasi gagal disimpan; periksa akses folder data") from exc
+
+
+@app.post("/connection/test")
+def connection_test(config: SourceConfig) -> dict:
+    try:
+        return STATE["source"].preview(config)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/connection/{action}")
+def connection_control(action: Literal["start", "stop", "poll"]) -> dict:
+    try:
+        return getattr(STATE["source"], action)()
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 def _test_frame() -> pd.DataFrame:
